@@ -8,9 +8,13 @@ enum NodeEnv {
   Test = 'test',
 }
 
+// Only DATABASE_URL is strictly required — without it Prisma cannot initialize.
+// Every third-party API key is optional during Phase 1 scaffolding; service stubs
+// throw NotImplementedException and will read config lazily in Phase 2.
 class EnvVars {
   @IsEnum(NodeEnv)
-  NODE_ENV!: NodeEnv;
+  @IsOptional()
+  NODE_ENV: NodeEnv = NodeEnv.Development;
 
   @IsInt()
   @IsOptional()
@@ -28,13 +32,16 @@ class EnvVars {
   DATABASE_URL!: string;
 
   @IsString()
-  ANTHROPIC_API_KEY!: string;
+  @IsOptional()
+  ANTHROPIC_API_KEY?: string;
 
   @IsString()
-  CLAUDE_MODEL_HAIKU!: string;
+  @IsOptional()
+  CLAUDE_MODEL_HAIKU?: string;
 
   @IsString()
-  CLAUDE_MODEL_SONNET!: string;
+  @IsOptional()
+  CLAUDE_MODEL_SONNET?: string;
 
   @IsInt()
   @IsOptional()
@@ -45,10 +52,12 @@ class EnvVars {
   CLAUDE_TIMEOUT_MS: number = 60000;
 
   @IsString()
-  ELEVENLABS_API_KEY!: string;
+  @IsOptional()
+  ELEVENLABS_API_KEY?: string;
 
   @IsString()
-  ELEVENLABS_VOICE_ID!: string;
+  @IsOptional()
+  ELEVENLABS_VOICE_ID?: string;
 
   @IsString()
   @IsOptional()
@@ -59,7 +68,8 @@ class EnvVars {
   ELEVENLABS_TIMEOUT_MS: number = 120000;
 
   @IsString()
-  PEXELS_API_KEY!: string;
+  @IsOptional()
+  PEXELS_API_KEY?: string;
 
   @IsInt()
   @IsOptional()
@@ -70,56 +80,72 @@ class EnvVars {
   PEXELS_TIMEOUT_MS: number = 10000;
 
   @IsString()
-  YOUTUBE_CLIENT_ID!: string;
+  @IsOptional()
+  YOUTUBE_CLIENT_ID?: string;
 
   @IsString()
-  YOUTUBE_CLIENT_SECRET!: string;
+  @IsOptional()
+  YOUTUBE_CLIENT_SECRET?: string;
 
   @IsString()
-  YOUTUBE_REFRESH_TOKEN_AI!: string;
+  @IsOptional()
+  YOUTUBE_REFRESH_TOKEN_AI?: string;
 
   @IsString()
-  YOUTUBE_REFRESH_TOKEN_SKIN!: string;
+  @IsOptional()
+  YOUTUBE_REFRESH_TOKEN_SKIN?: string;
 
   @IsString()
-  YOUTUBE_CHANNEL_ID_AI!: string;
+  @IsOptional()
+  YOUTUBE_CHANNEL_ID_AI?: string;
 
   @IsString()
-  YOUTUBE_CHANNEL_ID_SKIN!: string;
+  @IsOptional()
+  YOUTUBE_CHANNEL_ID_SKIN?: string;
 
   @IsString()
-  NOTION_API_KEY!: string;
+  @IsOptional()
+  NOTION_API_KEY?: string;
 
   @IsString()
-  NOTION_DATABASE_ID_AI!: string;
+  @IsOptional()
+  NOTION_DATABASE_ID_AI?: string;
 
   @IsString()
-  NOTION_DATABASE_ID_SKIN!: string;
+  @IsOptional()
+  NOTION_DATABASE_ID_SKIN?: string;
 
   @IsString()
-  SLACK_WEBHOOK_URL!: string;
+  @IsOptional()
+  SLACK_WEBHOOK_URL?: string;
 
   @IsString()
   @IsOptional()
   SLACK_CHANNEL: string = '#layer-studio';
 
   @IsString()
-  AWS_ACCESS_KEY_ID!: string;
+  @IsOptional()
+  AWS_ACCESS_KEY_ID?: string;
 
   @IsString()
-  AWS_SECRET_ACCESS_KEY!: string;
+  @IsOptional()
+  AWS_SECRET_ACCESS_KEY?: string;
 
   @IsString()
-  AWS_REGION!: string;
+  @IsOptional()
+  AWS_REGION?: string;
 
   @IsString()
-  AWS_S3_BUCKET!: string;
+  @IsOptional()
+  AWS_S3_BUCKET?: string;
 
   @IsString()
-  RSS_FEEDS_AI!: string;
+  @IsOptional()
+  RSS_FEEDS_AI?: string;
 
   @IsString()
-  RSS_FEEDS_SKIN!: string;
+  @IsOptional()
+  RSS_FEEDS_SKIN?: string;
 }
 
 export const validateEnv = (config: Record<string, unknown>): EnvVars => {

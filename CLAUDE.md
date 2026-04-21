@@ -78,8 +78,8 @@ layer-studio-pipeline/
 
 ### Node.js 버전
 
-- Node.js **20.x LTS** (필수)
-- 이하 버전에서는 동작 보장 안 됨
+- Node.js **25.x** (현재 사용 중)
+- 최소 요구사항: Node 20 이상 (package.json `engines` 기준)
 - `.nvmrc` 파일로 고정
 
 ---

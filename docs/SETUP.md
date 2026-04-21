@@ -22,9 +22,9 @@
 
 ### 필수 설치
 
-- **Node.js 20.x LTS** 이상
+- **Node.js 25.x** (현재 프로젝트 기준, 최소 20+)
   - 확인: `node --version`
-  - 설치: [nodejs.org](https://nodejs.org) 또는 `nvm install 20`
+  - 설치: [nodejs.org](https://nodejs.org) 또는 `nvm install 25`
 
 - **pnpm 9.x**
   - 확인: `pnpm --version`

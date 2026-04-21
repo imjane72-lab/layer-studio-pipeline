@@ -48,3 +48,6 @@ prisma/*.db-journal
 # Misc
 .cache/
 .turbo/
+
+# Claude Code per-user settings (permission allowlists)
+.claude/
