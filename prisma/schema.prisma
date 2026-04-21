@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Channel ====================
+
+enum Channel {
+  AI
+  SKIN
+}
+
+// ==================== News ====================
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  channel     Channel
+  title       String
+  description String?  @db.Text
+  url         String   @unique
+  source      String
+  publishedAt DateTime
+  fetchedAt   DateTime @default(now())
+
+  titleHash   String   @unique
+
+  selected    Boolean  @default(false)
+
+  videos      Video[]
+
+  @@index([channel, publishedAt])
+  @@index([fetchedAt])
+}
+
+// ==================== Video ====================
+
+enum VideoStatus {
+  PENDING
+  READY
+  APPROVED
+  REJECTED
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model Video {
+  id             String      @id @default(cuid())
+  channel        Channel
+  status         VideoStatus @default(PENDING)
+
+  title          String
+  description    String      @db.Text
+  tags           String[]
+  script         String      @db.Text
+
+  newsItemId     String?
+  newsItem       NewsItem?   @relation(fields: [newsItemId], references: [id])
+
+  videoUrl       String?
+  thumbnailUrl   String?
+  audioUrl       String?
+
+  youtubeVideoId String?
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+
+  notionPageId   String?
+
+  viewCount      Int         @default(0)
+  likeCount      Int         @default(0)
+  commentCount   Int         @default(0)
+  lastAnalyzedAt DateTime?
+
+  errorLog       String?     @db.Text
+  retryCount     Int         @default(0)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  assets         VideoAsset[]
+
+  @@index([channel, status])
+  @@index([status, createdAt])
+  @@index([publishedAt])
+}
+
+// ==================== Video Assets ====================
+
+enum AssetType {
+  B_ROLL
+  IMAGE
+  AUDIO_NARRATION
+  AUDIO_BGM
+  SUBTITLE_DATA
+}
+
+model VideoAsset {
+  id        String    @id @default(cuid())
+  videoId   String
+  video     Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  type      AssetType
+  url       String
+  metadata  Json
+
+  order     Int       @default(0)
+
+  createdAt DateTime  @default(now())
+
+  @@index([videoId, type])
+}
+
+// ==================== Pipeline Runs ====================
+
+enum PipelineStep {
+  NEWS_FETCH
+  NEWS_CURATE
+  SCRIPT_GENERATE
+  BROLL_FETCH
+  TTS_GENERATE
+  VIDEO_RENDER
+  NOTION_CREATE
+  SLACK_NOTIFY
+  APPROVAL
+  YOUTUBE_UPLOAD
+}
+
+enum StepStatus {
+  STARTED
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+model PipelineRun {
+  id        String    @id @default(cuid())
+  channel   Channel
+  videoId   String?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  status    String
+
+  logs      PipelineLog[]
+
+  @@index([channel, startedAt])
+}
+
+model PipelineLog {
+  id            String       @id @default(cuid())
+  runId         String
+  run           PipelineRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  step          PipelineStep
+  status        StepStatus
+  message       String?      @db.Text
+  metadata      Json?
+
+  startedAt     DateTime     @default(now())
+  durationMs    Int?
+
+  @@index([runId, step])
+}
+
+// ==================== Cost Tracking ====================
+
+model ApiCost {
+  id         String   @id @default(cuid())
+  service    String
+  endpoint   String?
+
+  tokensIn   Int?
+  tokensOut  Int?
+  charCount  Int?
+
+  cost       Decimal  @db.Decimal(10, 4)
+
+  videoId    String?
+  createdAt  DateTime @default(now())
+
+  @@index([service, createdAt])
+}
