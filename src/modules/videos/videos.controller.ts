@@ -1,15 +1,25 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   NotFoundException,
   Param,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import { VideosService } from './videos.service';
 import { Channel } from '../../common/enums/channel.enum';
 import type { VideoStatus } from '@prisma/client';
+
+interface UpdateScriptKoDto {
+  scriptKo: string;
+}
+
+interface UpdateScriptEnDto {
+  scriptEn: string;
+}
 
 @Controller('videos')
 export class VideosController {
@@ -35,6 +45,21 @@ export class VideosController {
   @Patch(':id/reject')
   async reject(@Param('id') id: string) {
     return this.videos.reject(id);
+  }
+
+  @Patch(':id/script-ko')
+  async updateScriptKo(@Param('id') id: string, @Body() body: UpdateScriptKoDto) {
+    return this.videos.updateScriptKo(id, body.scriptKo);
+  }
+
+  @Patch(':id/script-en')
+  async updateScriptEn(@Param('id') id: string, @Body() body: UpdateScriptEnDto) {
+    return this.videos.updateScriptEn(id, body.scriptEn);
+  }
+
+  @Post(':id/regenerate-audio')
+  async regenerateAudio(@Param('id') id: string) {
+    return this.videos.regenerateAudio(id);
   }
 
   @Delete(':id')

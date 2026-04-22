@@ -8,7 +8,8 @@ import { PipelineModule } from './modules/pipeline/pipeline.module';
 import { NewsModule } from './modules/news/news.module';
 import { ClaudeModule } from './modules/claude/claude.module';
 import { PexelsModule } from './modules/pexels/pexels.module';
-import { ElevenLabsModule } from './modules/elevenlabs/elevenlabs.module';
+import { TtsModule } from './modules/tts/tts.module';
+import { SubtitleModule } from './modules/subtitle/subtitle.module';
 import { VideoRendererModule } from './modules/video-renderer/video-renderer.module';
 import { NotionModule } from './modules/notion/notion.module';
 import { SlackModule } from './modules/slack/slack.module';
@@ -32,7 +33,8 @@ import { S3Module } from './modules/s3/s3.module';
     NewsModule,
     ClaudeModule,
     PexelsModule,
-    ElevenLabsModule,
+    TtsModule,
+    SubtitleModule,
     VideoRendererModule,
     NotionModule,
     SlackModule,

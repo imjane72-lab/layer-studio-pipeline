@@ -5,10 +5,10 @@ CREATE TYPE "Channel" AS ENUM ('AI', 'SKIN');
 CREATE TYPE "VideoStatus" AS ENUM ('PENDING', 'READY', 'APPROVED', 'REJECTED', 'SCHEDULED', 'PUBLISHED', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "AssetType" AS ENUM ('B_ROLL', 'IMAGE', 'AUDIO_NARRATION', 'AUDIO_BGM', 'SUBTITLE_DATA');
+CREATE TYPE "AssetType" AS ENUM ('B_ROLL', 'IMAGE', 'AUDIO_NARRATION_KO', 'AUDIO_BGM', 'SUBTITLE_SRT_EN', 'SUBTITLE_DATA');
 
 -- CreateEnum
-CREATE TYPE "PipelineStep" AS ENUM ('NEWS_FETCH', 'NEWS_CURATE', 'SCRIPT_GENERATE', 'BROLL_FETCH', 'TTS_GENERATE', 'VIDEO_RENDER', 'NOTION_CREATE', 'SLACK_NOTIFY', 'APPROVAL', 'YOUTUBE_UPLOAD');
+CREATE TYPE "PipelineStep" AS ENUM ('NEWS_FETCH', 'NEWS_CURATE', 'SCRIPT_GENERATE_KO', 'SCRIPT_TRANSLATE_EN', 'BROLL_FETCH', 'TTS_GENERATE_KO', 'SUBTITLE_GENERATE_EN', 'VIDEO_RENDER', 'NOTION_CREATE', 'SLACK_NOTIFY', 'APPROVAL', 'YOUTUBE_UPLOAD', 'YOUTUBE_CAPTION_UPLOAD');
 
 -- CreateEnum
 CREATE TYPE "StepStatus" AS ENUM ('STARTED', 'SUCCESS', 'FAILED', 'SKIPPED');
@@ -25,6 +25,7 @@ CREATE TABLE "NewsItem" (
     "fetchedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "titleHash" TEXT NOT NULL,
     "selected" BOOLEAN NOT NULL DEFAULT false,
+    "sourceLang" TEXT NOT NULL DEFAULT 'ko',
 
     CONSTRAINT "NewsItem_pkey" PRIMARY KEY ("id")
 );
@@ -34,14 +35,22 @@ CREATE TABLE "Video" (
     "id" TEXT NOT NULL,
     "channel" "Channel" NOT NULL,
     "status" "VideoStatus" NOT NULL DEFAULT 'PENDING',
-    "title" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
+    "titleKo" TEXT NOT NULL,
+    "scriptKo" TEXT NOT NULL,
+    "titleEn" TEXT NOT NULL,
+    "descriptionEn" TEXT NOT NULL,
+    "scriptEn" TEXT NOT NULL,
     "tags" TEXT[],
-    "script" TEXT NOT NULL,
+    "subtitleSegments" JSONB,
     "newsItemId" TEXT,
     "videoUrl" TEXT,
     "thumbnailUrl" TEXT,
     "audioUrl" TEXT,
+    "subtitleUrl" TEXT,
+    "ttsProvider" TEXT NOT NULL DEFAULT 'supertone',
+    "ttsVoiceId" TEXT,
+    "ttsCredits" INTEGER,
+    "ttsDurationSec" DOUBLE PRECISION,
     "youtubeVideoId" TEXT,
     "publishedAt" TIMESTAMP(3),
     "scheduledAt" TIMESTAMP(3),
@@ -105,6 +114,7 @@ CREATE TABLE "ApiCost" (
     "tokensIn" INTEGER,
     "tokensOut" INTEGER,
     "charCount" INTEGER,
+    "credits" INTEGER,
     "cost" DECIMAL(10,4) NOT NULL,
     "videoId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

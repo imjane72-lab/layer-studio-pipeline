@@ -1,12 +1,22 @@
 import React from 'react';
-import { Composition } from 'remotion';
-import { LayerAIStudio, layerAIStudioDefaults } from './compositions/LayerAIStudio';
-import { LayerSkinStudio, layerSkinStudioDefaults } from './compositions/LayerSkinStudio';
+import { CalculateMetadataFunction, Composition } from 'remotion';
+import { LayerAIStudio, LayerAIStudioProps, layerAIStudioDefaults } from './compositions/LayerAIStudio';
+import { LayerSkinStudio, LayerSkinStudioProps, layerSkinStudioDefaults } from './compositions/LayerSkinStudio';
 
 const FPS = 30;
-const DURATION_SECONDS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
+const FALLBACK_DURATION_SECONDS = 60;
+
+const calculateDuration: CalculateMetadataFunction<
+  LayerAIStudioProps | LayerSkinStudioProps
+> = ({ props }) => {
+  const last = props.subtitleSegments[props.subtitleSegments.length - 1];
+  const seconds = last ? Math.ceil(last.end) + 1 : FALLBACK_DURATION_SECONDS;
+  return {
+    durationInFrames: Math.max(FPS, FPS * seconds),
+  };
+};
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -14,20 +24,22 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="LayerAIStudio"
         component={LayerAIStudio}
-        durationInFrames={FPS * DURATION_SECONDS}
+        durationInFrames={FPS * FALLBACK_DURATION_SECONDS}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
         defaultProps={layerAIStudioDefaults}
+        calculateMetadata={calculateDuration}
       />
       <Composition
         id="LayerSkinStudio"
         component={LayerSkinStudio}
-        durationInFrames={FPS * DURATION_SECONDS}
+        durationInFrames={FPS * FALLBACK_DURATION_SECONDS}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
         defaultProps={layerSkinStudioDefaults}
+        calculateMetadata={calculateDuration}
       />
     </>
   );

@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, validateSync } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, IsString, validateSync } from 'class-validator';
 
 enum NodeEnv {
   Development = 'development',
@@ -31,6 +31,8 @@ class EnvVars {
   @IsString()
   DATABASE_URL!: string;
 
+  // ========== Claude ==========
+
   @IsString()
   @IsOptional()
   ANTHROPIC_API_KEY?: string;
@@ -47,25 +49,65 @@ class EnvVars {
   @IsOptional()
   CLAUDE_MAX_TOKENS: number = 4096;
 
+  @IsNumber()
+  @IsOptional()
+  CLAUDE_TEMPERATURE: number = 0.7;
+
   @IsInt()
   @IsOptional()
   CLAUDE_TIMEOUT_MS: number = 60000;
 
-  @IsString()
-  @IsOptional()
-  ELEVENLABS_API_KEY?: string;
+  // ========== Supertone Play (Korean TTS) ==========
 
   @IsString()
   @IsOptional()
-  ELEVENLABS_VOICE_ID?: string;
+  SUPERTONE_API_KEY?: string;
 
   @IsString()
   @IsOptional()
-  ELEVENLABS_MODEL_ID: string = 'eleven_multilingual_v2';
+  SUPERTONE_API_BASE: string = 'https://supertoneapi.com';
+
+  @IsString()
+  @IsOptional()
+  SUPERTONE_VOICE_ID_KO?: string;
+
+  @IsString()
+  @IsOptional()
+  SUPERTONE_MODEL: string = 'sona_speech_1';
+
+  @IsString()
+  @IsOptional()
+  SUPERTONE_LANGUAGE: string = 'ko';
+
+  @IsString()
+  @IsOptional()
+  SUPERTONE_STYLE: string = 'neutral';
+
+  @IsNumber()
+  @IsOptional()
+  SUPERTONE_PITCH_SHIFT: number = 0;
+
+  @IsNumber()
+  @IsOptional()
+  SUPERTONE_PITCH_VARIANCE: number = 1;
+
+  @IsNumber()
+  @IsOptional()
+  SUPERTONE_SPEED: number = 1;
 
   @IsInt()
   @IsOptional()
-  ELEVENLABS_TIMEOUT_MS: number = 120000;
+  SUPERTONE_TIMEOUT_MS: number = 60000;
+
+  @IsInt()
+  @IsOptional()
+  SUPERTONE_RATE_LIMIT_PER_MIN: number = 20;
+
+  @IsInt()
+  @IsOptional()
+  SUPERTONE_CREDIT_WARN_THRESHOLD: number = 80000;
+
+  // ========== Pexels ==========
 
   @IsString()
   @IsOptional()
@@ -78,6 +120,8 @@ class EnvVars {
   @IsInt()
   @IsOptional()
   PEXELS_TIMEOUT_MS: number = 10000;
+
+  // ========== YouTube ==========
 
   @IsString()
   @IsOptional()
@@ -103,6 +147,8 @@ class EnvVars {
   @IsOptional()
   YOUTUBE_CHANNEL_ID_SKIN?: string;
 
+  // ========== Notion ==========
+
   @IsString()
   @IsOptional()
   NOTION_API_KEY?: string;
@@ -115,6 +161,8 @@ class EnvVars {
   @IsOptional()
   NOTION_DATABASE_ID_SKIN?: string;
 
+  // ========== Slack ==========
+
   @IsString()
   @IsOptional()
   SLACK_WEBHOOK_URL?: string;
@@ -122,6 +170,8 @@ class EnvVars {
   @IsString()
   @IsOptional()
   SLACK_CHANNEL: string = '#layer-studio';
+
+  // ========== AWS S3 ==========
 
   @IsString()
   @IsOptional()
@@ -138,6 +188,8 @@ class EnvVars {
   @IsString()
   @IsOptional()
   AWS_S3_BUCKET?: string;
+
+  // ========== RSS Feeds ==========
 
   @IsString()
   @IsOptional()

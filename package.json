@@ -25,7 +25,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node scripts/seed-db.ts"
+    "prisma:seed": "ts-node scripts/seed-db.ts",
+    "test:supertone": "ts-node scripts/test-supertone.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
@@ -42,6 +43,7 @@
     "@remotion/cli": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
     "axios": "^1.7.0",
+    "bottleneck": "^2.19.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "date-fns": "^3.6.0",
@@ -52,7 +54,8 @@
     "reflect-metadata": "^0.2.2",
     "remotion": "^4.0.0",
     "rss-parser": "^3.13.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "subtitle": "^4.2.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
@@ -66,6 +69,7 @@
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
+    "dotenv": "^17.4.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.0",

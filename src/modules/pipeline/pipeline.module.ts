@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { PipelineController } from './pipeline.controller';
 import { PipelineService } from './pipeline.service';
 import { NewsModule } from '../news/news.module';
 import { ClaudeModule } from '../claude/claude.module';
 import { PexelsModule } from '../pexels/pexels.module';
-import { ElevenLabsModule } from '../elevenlabs/elevenlabs.module';
+import { TtsModule } from '../tts/tts.module';
+import { SubtitleModule } from '../subtitle/subtitle.module';
 import { VideoRendererModule } from '../video-renderer/video-renderer.module';
 import { NotionModule } from '../notion/notion.module';
 import { SlackModule } from '../slack/slack.module';
@@ -13,10 +15,12 @@ import { S3Module } from '../s3/s3.module';
 
 @Module({
   imports: [
+    PrismaModule,
     NewsModule,
     ClaudeModule,
     PexelsModule,
-    ElevenLabsModule,
+    TtsModule,
+    SubtitleModule,
     VideoRendererModule,
     NotionModule,
     SlackModule,
