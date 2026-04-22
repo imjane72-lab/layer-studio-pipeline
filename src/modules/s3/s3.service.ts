@@ -1,5 +1,7 @@
-import { createReadStream } from 'fs';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { createReadStream, createWriteStream } from 'fs';
+import { pipeline as pipelineAsync } from 'stream/promises';
+import { Readable } from 'stream';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   Injectable,
@@ -77,10 +79,36 @@ export class S3Service implements OnModuleInit {
     return `s3://${this.bucket}/${input.key}`;
   }
 
+  /**
+   * Download an object to a local file path. Streams to disk — safe for large
+   * videos. Returns the resolved file path.
+   */
+  async downloadToFile(key: string, filePath: string): Promise<string> {
+    this.ensureConfigured();
+    const response = await this.client!.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!response.Body) {
+      throw new Error(`S3 getObject returned empty body for key=${key}`);
+    }
+    await pipelineAsync(response.Body as Readable, createWriteStream(filePath));
+    this.logger.log(`S3 downloadToFile: ${key} -> ${filePath}`);
+    return filePath;
+  }
+
+  /**
+   * Parse an s3:// URI into its bucket + key parts. Returns null if the URI
+   * is not an s3:// form (e.g. already a presigned URL).
+   */
+  parseUri(uri: string): { bucket: string; key: string } | null {
+    const match = uri.match(/^s3:\/\/([^/]+)\/(.+)$/);
+    return match ? { bucket: match[1], key: match[2] } : null;
+  }
+
   /** Presign a GET URL (for Notion previews, reviewer access). Defaults to 7-day expiry. */
   async presignGet(key: string, expiresInSeconds = 7 * 24 * 60 * 60): Promise<string> {
     this.ensureConfigured();
-    const command = new PutObjectCommand({ Bucket: this.bucket, Key: key });
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     return getSignedUrl(this.client!, command, { expiresIn: expiresInSeconds });
   }
 

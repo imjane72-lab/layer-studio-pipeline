@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { PipelineController } from './pipeline.controller';
 import { PipelineService } from './pipeline.service';
+import { ApprovalOrchestratorService } from './approval-orchestrator.service';
 import { NewsModule } from '../news/news.module';
 import { ClaudeModule } from '../claude/claude.module';
 import { PexelsModule } from '../pexels/pexels.module';
@@ -28,7 +29,7 @@ import { S3Module } from '../s3/s3.module';
     S3Module,
   ],
   controllers: [PipelineController],
-  providers: [PipelineService],
-  exports: [PipelineService],
+  providers: [PipelineService, ApprovalOrchestratorService],
+  exports: [PipelineService, ApprovalOrchestratorService],
 })
 export class PipelineModule {}
