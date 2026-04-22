@@ -31,6 +31,15 @@ class EnvVars {
   @IsString()
   DATABASE_URL!: string;
 
+  /**
+   * When "true", the scheduler fires PipelineService.run() for both channels
+   * at the configured cron time. Disabled by default so dev boots don't
+   * burn API credits on unattended runs.
+   */
+  @IsString()
+  @IsOptional()
+  PIPELINE_CRON_ENABLED: string = 'false';
+
   // ========== Claude ==========
 
   @IsString()
