@@ -2,17 +2,17 @@
  * Supertone TTS smoke test — standalone script, bypasses NestJS bootstrap.
  *
  * Usage:
- *   pnpm exec ts-node scripts/test-supertone.ts
+ *   pnpm test:supertone
  *
- * Reads SUPERTONE_API_KEY / SUPERTONE_VOICE_ID_KO from .env and:
- *   1. Predicts duration for a sample sentence (no credit charge)
- *   2. Synthesizes 3 short Korean sentences
+ * Reads SUPERTONE_* vars from .env and:
+ *   1. Prints current credit balance
+ *   2. Synthesizes 3 Korean sentences with the configured voice
  *   3. Writes each clip to output/test-supertone/*.mp3
- *   4. Prints per-sentence duration + credit usage
+ *   4. Prints per-sentence duration + cumulative credit estimate
+ *   5. Prints post-run credit balance and actual consumption
  *
- * Run this once after registering a clone voice in Supertone Play to confirm:
- *   - API key works
- *   - Voice ID is valid
+ * Run once after registering a clone voice to confirm:
+ *   - API key + voice ID + model combination works
  *   - Pronunciation is acceptable for mixed Korean/English content
  */
 import 'dotenv/config';
@@ -30,8 +30,8 @@ async function main(): Promise<void> {
   const apiKey = process.env.SUPERTONE_API_KEY;
   const voiceId = process.env.SUPERTONE_VOICE_ID_KO;
   const base = process.env.SUPERTONE_API_BASE ?? 'https://supertoneapi.com';
-  const model = process.env.SUPERTONE_MODEL ?? 'sona_speech_1';
-  const style = process.env.SUPERTONE_STYLE ?? 'neutral';
+  const model = process.env.SUPERTONE_MODEL ?? 'sona_speech_2';
+  const style = process.env.SUPERTONE_STYLE ?? '';
 
   if (!apiKey || !voiceId) {
     console.error('SUPERTONE_API_KEY or SUPERTONE_VOICE_ID_KO is missing from .env');
@@ -47,49 +47,39 @@ async function main(): Promise<void> {
   const outDir = join(process.cwd(), 'output', 'test-supertone');
   await mkdir(outDir, { recursive: true });
 
-  // 1. Predict duration for the first sentence (free)
-  try {
-    const predict = await http.post(`/v1/text-to-speech/${voiceId}/predict-duration`, {
-      text: SAMPLE_SENTENCES[0],
-      language: 'ko',
-      style,
-      voice_settings: { pitch_shift: 0, pitch_variance: 1, speed: 1 },
-    });
-    console.log(
-      `[predict] "${SAMPLE_SENTENCES[0]}" -> ${predict.data.duration_seconds}s, ~${predict.data.estimated_credits} credits`,
-    );
-  } catch (err) {
-    logAxiosError('predict', err);
-  }
+  // 1. Balance before
+  const balanceBefore = await fetchBalance(http);
+  console.log(`[balance] start: ${balanceBefore} credits`);
+  console.log('');
 
-  // 2. Synthesize each sentence and save to disk
+  // 2. Synthesize each sentence
   let totalDuration = 0;
-  let totalCredits = 0;
 
   for (const [idx, sentence] of SAMPLE_SENTENCES.entries()) {
     try {
-      const response = await http.post(
-        `/v1/text-to-speech/${voiceId}`,
-        {
-          text: sentence,
-          language: 'ko',
-          style,
-          model,
-          voice_settings: { pitch_shift: 0, pitch_variance: 1, speed: 1 },
-          output_format: 'mp3',
-        },
-        { responseType: 'arraybuffer' },
-      );
+      const body: Record<string, unknown> = {
+        text: sentence,
+        language: 'ko',
+        model,
+        voice_settings: { pitch_shift: 0, pitch_variance: 1, speed: 1 },
+        output_format: 'mp3',
+      };
+      // Custom (cloned) voices reject `style` — only send for stock voices.
+      if (style && style.length > 0) {
+        body.style = style;
+      }
 
-      const duration = Number(response.headers['x-duration-seconds'] ?? 0);
-      const credits = Number(response.headers['x-credits-used'] ?? 0);
+      const response = await http.post(`/v1/text-to-speech/${voiceId}`, body, {
+        responseType: 'arraybuffer',
+      });
+
+      const duration = Number(response.headers['x-audio-length'] ?? 0);
       totalDuration += duration;
-      totalCredits += credits;
 
       const outPath = join(outDir, `sentence_${String(idx + 1).padStart(2, '0')}.mp3`);
       await writeFile(outPath, Buffer.from(response.data));
       console.log(
-        `[synth ${idx + 1}/${SAMPLE_SENTENCES.length}] ${duration.toFixed(2)}s ${credits}cr -> ${outPath}`,
+        `[synth ${idx + 1}/${SAMPLE_SENTENCES.length}] ${duration.toFixed(2)}s -> ${outPath}`,
       );
     } catch (err) {
       logAxiosError(`synth ${idx + 1}`, err);
@@ -97,8 +87,24 @@ async function main(): Promise<void> {
   }
 
   console.log('');
-  console.log(`Total: ${totalDuration.toFixed(2)}s, ${totalCredits} credits`);
-  console.log(`Output dir: ${outDir}`);
+
+  // 3. Balance after
+  const balanceAfter = await fetchBalance(http);
+  const creditsUsed = balanceBefore - balanceAfter;
+  console.log(`[balance] end:   ${balanceAfter} credits`);
+  console.log(`[summary] duration=${totalDuration.toFixed(2)}s actual-credits=${creditsUsed}`);
+  console.log(`[summary] estimated credits/sec = ${(creditsUsed / totalDuration).toFixed(2)}`);
+  console.log(`[output] ${outDir}`);
+}
+
+async function fetchBalance(http: ReturnType<typeof axios.create>): Promise<number> {
+  try {
+    const { data } = await http.get<{ balance: number }>('/v1/credits');
+    return data.balance;
+  } catch (err) {
+    logAxiosError('balance', err);
+    return -1;
+  }
 }
 
 function logAxiosError(op: string, err: unknown): void {

@@ -15,10 +15,11 @@ interface SupertoneVoiceSettings {
   speed: number;
 }
 
-interface SupertonePredictDurationResponse {
-  duration_seconds: number;
-  estimated_credits: number;
-}
+// Supertone bills ~10 credits per second of generated audio (Creator plan docs).
+// We use this to estimate per-call credit cost since the synthesis endpoint
+// doesn't return credits in response headers. Real-time balance is available
+// from GET /v1/credits for monitoring.
+const CREDITS_PER_SECOND_ESTIMATE = 10;
 
 @Injectable()
 export class SupertoneProvider implements TtsProvider, OnModuleInit {
@@ -45,9 +46,9 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
     this.apiKey = this.config.get<string>('SUPERTONE_API_KEY');
     this.apiBase = this.config.get<string>('SUPERTONE_API_BASE', 'https://supertoneapi.com');
     this.voiceIdKo = this.config.get<string>('SUPERTONE_VOICE_ID_KO');
-    this.model = this.config.get<string>('SUPERTONE_MODEL', 'sona_speech_1');
+    this.model = this.config.get<string>('SUPERTONE_MODEL', 'sona_speech_2');
     this.language = this.config.get<string>('SUPERTONE_LANGUAGE', 'ko');
-    this.defaultStyle = this.config.get<string>('SUPERTONE_STYLE', 'neutral');
+    this.defaultStyle = this.config.get<string>('SUPERTONE_STYLE', '');
     this.defaultPitchShift = this.config.get<number>('SUPERTONE_PITCH_SHIFT', 0);
     this.defaultPitchVariance = this.config.get<number>('SUPERTONE_PITCH_VARIANCE', 1);
     this.defaultSpeed = this.config.get<number>('SUPERTONE_SPEED', 1);
@@ -73,7 +74,7 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
   async synthesize(options: TtsSynthesisOptions): Promise<TtsSynthesisResult> {
     this.ensureConfigured();
 
-    const payload = this.buildRequestBody(options, { includeOutputFormat: true });
+    const payload = this.buildRequestBody(options);
 
     return this.limiter.schedule(async () => {
       try {
@@ -83,14 +84,16 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
           { responseType: 'arraybuffer' },
         );
 
-        const durationHeader = response.headers['x-duration-seconds'];
-        const creditsHeader = response.headers['x-credits-used'];
+        // Supertone returns duration in x-audio-length header (seconds, float).
+        // Credits are NOT in response headers — we estimate from duration.
+        const durationHeader = response.headers['x-audio-length'];
         const contentType = response.headers['content-type'] ?? 'audio/mpeg';
+        const duration = Number(durationHeader ?? 0);
 
         return {
           audioBuffer: Buffer.from(response.data as ArrayBuffer),
-          durationSeconds: Number(durationHeader ?? 0),
-          creditsUsed: Number(creditsHeader ?? 0),
+          durationSeconds: duration,
+          creditsUsed: Math.ceil(duration * CREDITS_PER_SECOND_ESTIMATE),
           mimeType: String(contentType),
         };
       } catch (error) {
@@ -99,30 +102,34 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
     });
   }
 
+  /**
+   * Supertone has no dedicated predict-duration endpoint. To estimate without
+   * spending credits is not possible via the public API — the only predictor
+   * is character count. We approximate: ~0.1s per Korean character at speed=1.
+   *
+   * Use this only for rough budget checks before a full script synthesis;
+   * the real duration comes from the synthesize response header.
+   */
   async predictDuration(options: TtsSynthesisOptions): Promise<TtsDurationPrediction> {
     this.ensureConfigured();
-
-    const payload = this.buildRequestBody(options, { includeOutputFormat: false });
-
-    try {
-      const { data } = await this.http.post<SupertonePredictDurationResponse>(
-        `/v1/text-to-speech/${this.voiceIdKo}/predict-duration`,
-        payload,
-      );
-
-      return {
-        durationSeconds: data.duration_seconds,
-        estimatedCredits: data.estimated_credits,
-      };
-    } catch (error) {
-      throw this.wrapError(error, 'predictDuration');
-    }
+    const speed = options.speed ?? this.defaultSpeed;
+    const charCount = options.text.length;
+    // Rough Korean heuristic: ~10 chars/sec at speed=1.0
+    const durationSeconds = (charCount / 10) / speed;
+    return {
+      durationSeconds,
+      estimatedCredits: Math.ceil(durationSeconds * CREDITS_PER_SECOND_ESTIMATE),
+    };
   }
 
-  private buildRequestBody(
-    options: TtsSynthesisOptions,
-    { includeOutputFormat }: { includeOutputFormat: boolean },
-  ): Record<string, unknown> {
+  /** Fetch current account credit balance. Useful for monitoring + pre-flight budget checks. */
+  async getCreditBalance(): Promise<number> {
+    this.ensureConfigured();
+    const { data } = await this.http.get<{ balance: number }>('/v1/credits');
+    return data.balance;
+  }
+
+  private buildRequestBody(options: TtsSynthesisOptions): Record<string, unknown> {
     const voiceSettings: SupertoneVoiceSettings = {
       pitch_shift: options.pitchShift ?? this.defaultPitchShift,
       pitch_variance: options.pitchVariance ?? this.defaultPitchVariance,
@@ -132,13 +139,17 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
     const body: Record<string, unknown> = {
       text: options.text,
       language: this.language,
-      style: options.style ?? this.defaultStyle,
       model: this.model,
       voice_settings: voiceSettings,
+      output_format: 'mp3',
     };
 
-    if (includeOutputFormat) {
-      body.output_format = 'mp3';
+    // Supertone rejects `style` for custom (cloned) voices — the voice itself
+    // defines its style. Only send `style` if explicitly set to a non-empty value,
+    // intended for stock voices that support style variation.
+    const style = options.style ?? this.defaultStyle;
+    if (style && style.length > 0) {
+      body.style = style;
     }
 
     return body;
