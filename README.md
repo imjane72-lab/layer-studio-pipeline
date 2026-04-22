@@ -137,6 +137,43 @@ flowchart TD
 업로드된 영상은 한국 시간 오전 7시에 공개됩니다. 이는 미국 동부 시간 전날 오후 6시로, 영어권 시청 피크 타임입니다.
  
 ---
+
+## 🔔 Webhook 엔드포인트
+
+파이프라인은 생성(D-1) → 승인 대기 → YouTube 업로드(D-Day) 단계로 분리되어 있고, 승인 결과는 Notion automation 이 webhook 으로 알려주는 구조입니다.
+
+### `POST /webhooks/notion/approval`
+
+Notion 에서 Approved 체크박스 → true 로 변경 시 호출. 본문의 Notion 페이지 ID 로 Video 를 찾아 **S3 에서 로컬로 영상/자막 다운로드 → YouTube 업로드(예약 07:00 KST) + SRT 업로드 → DB 상태 `SCHEDULED` 업데이트** 수행.
+
+**허용 payload 형태 (셋 중 하나):**
+
+```json
+{"page":    {"id": "<notion-page-id>"}}
+{"page_id": "<notion-page-id>"}
+{"data":    {"page": {"id": "<notion-page-id>"}}}
+```
+
+**응답:**
+
+| 상황 | 상태 | 본문 |
+|---|---|---|
+| 정상 처리 | 200 | `{"ok":true,"youtubeVideoId":"..."}` |
+| page id 누락 | 400 | `Missing Notion page id in payload` |
+| 해당 Video 없음 | 404 | `No video found for Notion page ...` |
+| 렌더링 이전 상태 | 500 | `Video ... has no videoUrl (not rendered yet)` |
+
+**멱등성:** 이미 `SCHEDULED` 또는 `PUBLISHED` 인 영상에 두 번째 승인이 오면 YouTube 재업로드 없이 기존 `youtubeVideoId` 를 그대로 돌려줌. Notion automation 이 재시도하거나 실수로 체크를 두 번 눌러도 안전. (테스트: [approval-orchestrator.service.spec.ts](src/modules/pipeline/approval-orchestrator.service.spec.ts))
+
+### `POST /webhooks/notion/reject`
+
+거절 체크박스에 대응. 페이로드 모양은 승인과 동일. 선택적으로 `reason` 필드를 받아 `Video.errorLog` 에 기록. 이미 YouTube 에 SCHEDULED/PUBLISHED 된 영상은 거절 거부(YouTube Studio 에서 수동 삭제 필요).
+
+### Cron 트리거
+
+`@nestjs/schedule` 로 KST 19:00 (UTC 10:00), 홀수 날짜에 AI + Skin 채널 파이프라인을 동시 실행. 기본적으로 **비활성화** (`PIPELINE_CRON_ENABLED=false`) — 로컬 개발 부팅이 의도치 않게 API 크레딧을 소모하지 않도록. 프로덕션/스테이징에서는 `PIPELINE_CRON_ENABLED=true` 로 설정.
+
+---
  
 ## 📚 문서
  
@@ -156,15 +193,16 @@ flowchart TD
 - [x] 프로젝트 아키텍처 설계
 - [x] 콘텐츠 전략 확정 (한국어 음성 + 영어 자막)
 - [x] 문서화
-- [ ] NestJS 백엔드 스캐폴딩
-- [ ] Claude Agent SDK 통합
+- [x] NestJS 백엔드 스캐폴딩
+- [x] Claude Agent SDK 통합 (큐레이션 / 스크립트 / 번역 / 메타데이터)
+- [x] Remotion 영상 템플릿 (한국어 음성 + 영어 자막, 문장 단위)
+- [x] Supertone Play TTS 모듈 (레이트 리미터 + 문장별 분할 호출)
+- [x] Pexels B-roll 통합
+- [x] YouTube Data API 통합 (영상 + 자막 트랙 별도 업로드)
+- [x] Notion 승인/거절 webhook + 멱등 orchestrator
+- [x] 파이프라인 스케줄러 (KST 19:00 cron, 토글 가능)
+- [ ] 첫 파이프라인 엔드투엔드 라이브 실행 (실제 API 키 주입 후)
 - [ ] 콘텐츠 도구용 MCP 서버
-- [ ] Remotion 영상 템플릿 (한국어 음성 + 영어 자막)
-- [ ] Supertone Play 한국어 음성 복제 셋업
-- [ ] Pexels B-roll 통합
-- [ ] YouTube Data API 통합
-- [ ] Notion 승인 워크플로
-- [ ] 첫 파이프라인 엔드투엔드 테스트
 - [ ] 프로덕션 배포
 ---
  
