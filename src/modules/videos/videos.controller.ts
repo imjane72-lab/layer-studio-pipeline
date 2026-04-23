@@ -17,10 +17,6 @@ interface UpdateScriptKoDto {
   scriptKo: string;
 }
 
-interface UpdateScriptEnDto {
-  scriptEn: string;
-}
-
 @Controller('videos')
 export class VideosController {
   constructor(private readonly videos: VideosService) {}
@@ -50,11 +46,6 @@ export class VideosController {
   @Patch(':id/script-ko')
   async updateScriptKo(@Param('id') id: string, @Body() body: UpdateScriptKoDto) {
     return this.videos.updateScriptKo(id, body.scriptKo);
-  }
-
-  @Patch(':id/script-en')
-  async updateScriptEn(@Param('id') id: string, @Body() body: UpdateScriptEnDto) {
-    return this.videos.updateScriptEn(id, body.scriptEn);
   }
 
   @Post(':id/regenerate-audio')

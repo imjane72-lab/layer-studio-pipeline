@@ -11,17 +11,17 @@ import {
 } from './prompts/metadata/title.prompt';
 
 export interface YouTubeMetadata {
-  titleEn: string;
-  descriptionEn: string;
+  title: string;
+  description: string;
   tags: string[];
 }
 
 interface RawTitleResponse {
-  title_en: string;
+  title_ko: string;
 }
 
 interface RawDescriptionResponse {
-  description_en: string;
+  description_ko: string;
   tags: string[];
 }
 
@@ -33,9 +33,9 @@ export class MetadataService {
 
   async generate(
     channel: Channel,
-    input: { titleKo: string; scriptKo: string; sentencesEn: string[] },
+    input: { titleKo: string; scriptKo: string },
   ): Promise<YouTubeMetadata> {
-    this.logger.log(`Generating YouTube metadata for ${channel}`);
+    this.logger.log(`Generating Korean YouTube metadata for ${channel}`);
 
     const titleResult = await this.claude.callJson<RawTitleResponse>({
       tier: 'sonnet',
@@ -44,7 +44,6 @@ export class MetadataService {
         channel: channel === Channel.AI ? 'AI' : 'SKIN',
         titleKo: input.titleKo,
         scriptKo: input.scriptKo,
-        sentencesEn: input.sentencesEn,
       }),
       costTag: `metadata-title-${channel.toLowerCase()}`,
     });
@@ -54,15 +53,15 @@ export class MetadataService {
       systemPrompt: DESCRIPTION_METADATA_SYSTEM,
       userPrompt: buildDescriptionMetadataUserPrompt({
         channel: channel === Channel.AI ? 'AI' : 'SKIN',
-        titleEn: titleResult.title_en,
-        sentencesEn: input.sentencesEn,
+        titleKo: titleResult.title_ko,
+        scriptKo: input.scriptKo,
       }),
       costTag: `metadata-description-${channel.toLowerCase()}`,
     });
 
     return {
-      titleEn: titleResult.title_en,
-      descriptionEn: descResult.description_en,
+      title: titleResult.title_ko,
+      description: descResult.description_ko,
       tags: descResult.tags,
     };
   }

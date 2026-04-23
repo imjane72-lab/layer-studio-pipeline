@@ -11,7 +11,6 @@ import { Channel } from '../../common/enums/channel.enum';
 export interface ApprovalNotificationInput {
   channel: Channel;
   titleKo: string;
-  titleEn: string;
   ttsDurationSec: number;
   ttsCredits: number;
   creditBudgetPerMonth: number;
@@ -58,8 +57,7 @@ export class SlackService implements OnModuleInit {
     return [
       `:clapper: *[${channelLabel}]* 새 영상 준비됨`,
       ``,
-      `:kr: KO: "${input.titleKo}"`,
-      `:us: EN: "${input.titleEn}"`,
+      `제목: "${input.titleKo}"`,
       ``,
       `음성 길이: ${duration}초 (${creditLine} 크레딧)`,
       ``,

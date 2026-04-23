@@ -10,11 +10,10 @@ import { Channel } from '../../common/enums/channel.enum';
 
 export interface NotionCardInput {
   channel: Channel;
+  format: 'A' | 'C';
   titleKo: string;
   scriptKo: string;
-  titleEn: string;
-  descriptionEn: string;
-  scriptEn: string;
+  descriptionKo: string;
   tags: string[];
   videoPreviewUrl: string;
   audioPreviewUrl: string;
@@ -49,28 +48,64 @@ export class NotionService implements OnModuleInit {
     }
   }
 
+  /**
+   * Find pages in the channel's DB where Approved=true and Status="Pending".
+   * Used by the polling approval loop to detect reviewer sign-off without
+   * relying on Notion automations (which require a paid plan).
+   */
+  async findApprovedPendingPages(channel: Channel): Promise<string[]> {
+    this.ensureConfigured(channel);
+    const databaseId = channel === Channel.AI ? this.dbAi! : this.dbSkin!;
+
+    const response = await this.client!.databases.query({
+      database_id: databaseId,
+      filter: {
+        and: [
+          { property: 'Approved', checkbox: { equals: true } },
+          { property: 'Status', select: { equals: 'Pending' } },
+        ],
+      },
+      page_size: 20,
+    });
+
+    return response.results.map((r) => r.id);
+  }
+
+  async updatePageStatus(
+    pageId: string,
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Scheduled' | 'Published',
+  ): Promise<void> {
+    if (!this.client) {
+      throw new ServiceUnavailableException('NOTION_API_KEY is not configured.');
+    }
+    await this.client.pages.update({
+      page_id: pageId,
+      properties: {
+        Status: { select: { name: status } },
+      } as never,
+    });
+  }
+
   async createApprovalCard(input: NotionCardInput): Promise<{ pageId: string; url: string }> {
     this.ensureConfigured(input.channel);
     const databaseId = input.channel === Channel.AI ? this.dbAi! : this.dbSkin!;
 
     this.logger.log(
-      `Notion card: ${input.titleKo} / ${input.titleEn} (${input.channel}, ${input.ttsCredits} credits)`,
+      `Notion card: ${input.titleKo} (${input.channel}, ${input.ttsCredits} credits)`,
     );
 
-    // The Notion DB must have matching property names. Columns expected
-    // (see docs/SPEC.md §Notion): "Title Ko" (title), "Title En", "Channel",
-    // "Status", "Script Ko", "Script En", "Description En", "Tags" (multi-select),
+    // Notion DB columns expected: "Title Ko" (title), "Channel", "Format",
+    // "Status", "Script Ko", "Description Ko", "Tags" (multi-select),
     // "Video", "Audio", "SRT", "TTS Credits", "TTS Duration", "Scheduled At",
     // "Approved" (checkbox).
     const properties = {
       'Title Ko': { title: [{ text: { content: input.titleKo.slice(0, 2000) } }] },
-      'Title En': { rich_text: [{ text: { content: input.titleEn.slice(0, 2000) } }] },
       Channel: { select: { name: input.channel } },
+      Format: { select: { name: input.format } },
       Status: { select: { name: 'Pending' } },
       'Script Ko': { rich_text: [{ text: { content: input.scriptKo.slice(0, 2000) } }] },
-      'Script En': { rich_text: [{ text: { content: input.scriptEn.slice(0, 2000) } }] },
-      'Description En': {
-        rich_text: [{ text: { content: input.descriptionEn.slice(0, 2000) } }],
+      'Description Ko': {
+        rich_text: [{ text: { content: input.descriptionKo.slice(0, 2000) } }],
       },
       Tags: { multi_select: input.tags.slice(0, 16).map((name) => ({ name })) },
       Video: { url: input.videoPreviewUrl },

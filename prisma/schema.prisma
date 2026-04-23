@@ -51,22 +51,28 @@ enum VideoStatus {
   FAILED
 }
 
-model Video {
-  id               String      @id @default(cuid())
-  channel          Channel
-  status           VideoStatus @default(PENDING)
+// Content delivery template — see docs/FORMATS.md.
+// A: Informational (new product / feature announcement)
+// C: How-to (practical tutorial with screen demo)
+enum VideoFormat {
+  A
+  C
+}
 
-  // Korean original (source of truth for audio)
+model Video {
+  id               String       @id @default(cuid())
+  channel          Channel
+  format           VideoFormat?
+  status           VideoStatus  @default(PENDING)
+
+  // Korean script + metadata (channel is Korean-only; foreign viewers rely on
+  // YouTube auto-translation of the uploaded Korean caption track)
   titleKo          String
   scriptKo         String      @db.Text
-
-  // English translation (what YouTube viewers see)
-  titleEn          String
-  descriptionEn   String      @db.Text
-  scriptEn         String      @db.Text
+  descriptionKo    String?     @db.Text
   tags             String[]
 
-  // Subtitle timing data: sentence-level ko <-> en mapping with start/end seconds
+  // Subtitle timing data: sentence-level Korean text with start/end seconds
   subtitleSegments Json?
 
   newsItemId       String?
@@ -76,7 +82,7 @@ model Video {
   videoUrl         String?
   thumbnailUrl     String?
   audioUrl         String?     // Korean narration (Supertone generated)
-  subtitleUrl      String?     // English SRT file
+  subtitleUrl      String?     // Korean SRT file (YouTube caption track)
 
   // TTS metadata (Supertone)
   ttsProvider      String      @default("supertone")
@@ -145,10 +151,9 @@ enum PipelineStep {
   NEWS_FETCH
   NEWS_CURATE
   SCRIPT_GENERATE_KO
-  SCRIPT_TRANSLATE_EN
   BROLL_FETCH
   TTS_GENERATE_KO
-  SUBTITLE_GENERATE_EN
+  SUBTITLE_GENERATE_KO
   VIDEO_RENDER
   NOTION_CREATE
   SLACK_NOTIFY

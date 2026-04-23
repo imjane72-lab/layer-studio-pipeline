@@ -86,7 +86,7 @@ export class ApprovalOrchestratorService {
     }
 
     const channel = this.toChannel(video.channel);
-    this.logger.log(`Publishing ${videoId} (${channel}) "${video.titleEn}"`);
+    this.logger.log(`Publishing ${videoId} (${channel}) "${video.titleKo}"`);
 
     await this.prisma.video.update({
       where: { id: videoId },
@@ -104,22 +104,23 @@ export class ApprovalOrchestratorService {
 
       const youtubeVideoId = await this.youtube.upload({
         channel,
-        titleEn: video.titleEn,
-        descriptionEn: video.descriptionEn,
+        title: video.titleKo,
+        description: video.descriptionKo ?? '',
         tags: video.tags,
         videoPath,
         scheduledAt: video.scheduledAt ?? undefined,
       });
 
       if (srtPath) {
-        // Caption upload failure must NOT fail the publish — burned-in subs
-        // already cover viewers; this just removes the auto-translation boost.
+        // Caption upload failure must NOT fail the publish — burned-in Korean
+        // subtitles already cover viewers; this just removes the YouTube
+        // auto-translation boost for foreign viewers.
         try {
           await this.captionUpload.upload({
             channel,
             youtubeVideoId,
             srtPath,
-            language: 'en',
+            language: 'ko',
           });
         } catch (err) {
           this.logger.warn(

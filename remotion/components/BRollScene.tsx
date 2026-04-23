@@ -1,8 +1,16 @@
 import React from 'react';
-import { AbsoluteFill, OffthreadVideo, Sequence, useVideoConfig } from 'remotion';
+import {
+  AbsoluteFill,
+  Img,
+  OffthreadVideo,
+  Sequence,
+  useVideoConfig,
+} from 'remotion';
 
 export interface BRollClip {
-  videoUrl: string;
+  /** One of videoUrl or imageUrl must be set. */
+  videoUrl?: string;
+  imageUrl?: string;
   durationSeconds: number;
 }
 
@@ -11,10 +19,14 @@ interface BRollSceneProps {
 }
 
 /**
- * Sequential playback of B-roll clips to fill the full video duration.
+ * Sequential playback of B-roll clips to fill the video duration.
  *
- * Each clip plays for its allotted duration (matches `broll_plan.duration_seconds`
- * from the Korean scriptwriter output). Clips are back-to-back using <Sequence>.
+ * Each clip is either:
+ *   - a stock video from Pexels (videoUrl) — plays normally
+ *   - a static article image (imageUrl) — displayed as a still for its duration
+ *
+ * Clips are back-to-back using <Sequence>. When no clips match, falls back
+ * to a black background so rendering still succeeds.
  */
 export const BRollScene: React.FC<BRollSceneProps> = ({ clips }) => {
   const { fps } = useVideoConfig();
@@ -33,10 +45,17 @@ export const BRollScene: React.FC<BRollSceneProps> = ({ clips }) => {
         runningFrame += durationInFrames;
         return (
           <Sequence key={idx} from={from} durationInFrames={durationInFrames}>
-            <OffthreadVideo
-              src={clip.videoUrl}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            {clip.videoUrl ? (
+              <OffthreadVideo
+                src={clip.videoUrl}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : clip.imageUrl ? (
+              <Img
+                src={clip.imageUrl}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : null}
           </Sequence>
         );
       })}

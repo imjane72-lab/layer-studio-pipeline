@@ -5,11 +5,14 @@ import { SrtGeneratorService } from './srt-generator.service';
 /**
  * Subtitle segment as persisted to the DB (`Video.subtitleSegments`) and consumed
  * by Remotion. Strips the raw audio buffer — that lives in S3 / merged MP3 only.
+ *
+ * Korean-only. The pipeline burns Korean subtitles into the video and uploads
+ * a Korean SRT as the YouTube caption track; YouTube auto-translates from
+ * Korean into viewers' preferred languages.
  */
 export interface SubtitleSegment {
   index: number;
   textKo: string;
-  textEn: string;
   start: number;
   end: number;
 }
@@ -23,10 +26,9 @@ export class SubtitleService {
   /**
    * Convert TTS sentence segments into:
    *  - `segments` to persist to `Video.subtitleSegments` (JSON) and feed Remotion
-   *  - `srt` the English SRT text to upload to YouTube as the official caption
+   *  - `srt` the Korean SRT text to upload to YouTube as the official caption
    *
-   * Since Supertone is called sentence-by-sentence, timing is already correct —
-   * no ElevenLabs-style word-level alignment pass needed.
+   * Since Supertone is called sentence-by-sentence, timing is already correct.
    */
   buildFromTtsSegments(ttsSegments: SentenceSegment[]): {
     segments: SubtitleSegment[];
@@ -35,7 +37,6 @@ export class SubtitleService {
     const segments: SubtitleSegment[] = ttsSegments.map((s) => ({
       index: s.index,
       textKo: s.textKo,
-      textEn: s.textEn,
       start: s.start,
       end: s.end,
     }));
@@ -44,11 +45,11 @@ export class SubtitleService {
       segments.map((s) => ({
         start: s.start,
         end: s.end,
-        text: s.textEn,
+        text: s.textKo,
       })),
     );
 
-    this.logger.log(`Built ${segments.length} subtitle segments, SRT ${srt.length} chars`);
+    this.logger.log(`Built ${segments.length} subtitle segments, SRT ${srt.length} chars (ko)`);
 
     return { segments, srt };
   }

@@ -42,15 +42,6 @@ export class VideosService {
   }
 
   /**
-   * Update English subtitle text only. No TTS regeneration needed — timing
-   * stays anchored to the Korean audio.
-   */
-  async updateScriptEn(id: string, scriptEn: string): Promise<Video> {
-    this.logger.log(`Update scriptEn for video ${id}`);
-    return this.prisma.video.update({ where: { id }, data: { scriptEn } });
-  }
-
-  /**
    * Re-synthesize the Korean narration (Supertone) after Script Ko edits.
    * Phase 2: hook to TTS + video-renderer + S3 upload.
    */

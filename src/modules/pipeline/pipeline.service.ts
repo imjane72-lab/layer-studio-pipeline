@@ -9,9 +9,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NewsService } from '../news/news.service';
 import { CuratorService } from '../claude/curator.service';
 import { ScriptwriterKoService } from '../claude/scriptwriter-ko.service';
-import { TranslatorService } from '../claude/translator.service';
 import { MetadataService } from '../claude/metadata.service';
 import { PexelsService } from '../pexels/pexels.service';
+import { ArticleScraperService } from '../article-scraper/article-scraper.service';
+import { ScreenCaptureService } from '../screen-capture/screen-capture.service';
 import { TtsService, SentenceSegment } from '../tts/tts.service';
 import { SubtitleService } from '../subtitle/subtitle.service';
 import { VideoRendererService } from '../video-renderer/video-renderer.service';
@@ -23,10 +24,9 @@ type PipelineStep =
   | 'NEWS_FETCH'
   | 'NEWS_CURATE'
   | 'SCRIPT_GENERATE_KO'
-  | 'SCRIPT_TRANSLATE_EN'
   | 'BROLL_FETCH'
   | 'TTS_GENERATE_KO'
-  | 'SUBTITLE_GENERATE_EN'
+  | 'SUBTITLE_GENERATE_KO'
   | 'VIDEO_RENDER'
   | 'NOTION_CREATE'
   | 'SLACK_NOTIFY';
@@ -46,9 +46,10 @@ export class PipelineService {
     private readonly news: NewsService,
     private readonly curator: CuratorService,
     private readonly scriptwriter: ScriptwriterKoService,
-    private readonly translator: TranslatorService,
     private readonly metadata: MetadataService,
     private readonly pexels: PexelsService,
+    private readonly scraper: ArticleScraperService,
+    private readonly screenCapture: ScreenCaptureService,
     private readonly tts: TtsService,
     private readonly subtitle: SubtitleService,
     private readonly renderer: VideoRendererService,
@@ -90,14 +91,9 @@ export class PipelineService {
       );
       await this.news.markSelected(curation.selectedItem.url);
 
-      // 3. Korean script
+      // 3. Korean script (format-specific prompt)
       const script = await this.step(run.id, 'SCRIPT_GENERATE_KO', () =>
-        this.scriptwriter.write(channel, curation.selectedItem),
-      );
-
-      // 4. English translation (sentence-level)
-      const translation = await this.step(run.id, 'SCRIPT_TRANSLATE_EN', () =>
-        this.translator.translate(channel, script.sentencesKo),
+        this.scriptwriter.write(channel, curation.format, curation.selectedItem),
       );
 
       // Create Video row so downstream steps can attribute costs and assets
@@ -109,12 +105,10 @@ export class PipelineService {
       const video = await this.prisma.video.create({
         data: {
           channel,
+          format: curation.format,
           status: 'PENDING',
           titleKo: script.titleKo,
           scriptKo: script.scriptKo,
-          titleEn: '',
-          descriptionEn: '',
-          scriptEn: translation.sentencesEn.join(' '),
           tags: [],
           newsItemId: newsItem?.id,
         },
@@ -124,19 +118,101 @@ export class PipelineService {
         data: { videoId: video.id },
       });
 
-      // 5. Pexels B-roll (per broll_plan entry)
+      // 5. B-roll assembly — per sentence, try in order:
+      //   (a) screenshot of the URL Claude suggested (topic-specific product UI)
+      //   (b) Pexels stock portrait video (generic scene matching visual keywords)
+      //   (c) article og:image / inline <img> scraped from source URL (fallback)
+      // Screenshots and article images are uploaded to S3 so Remotion can fetch
+      // via http(s)://.
       const bRollClips = await this.step(run.id, 'BROLL_FETCH', async () => {
-        const clips = [];
+        const articleImages = await this.scraper
+          .scrape(curation.selectedItem.url)
+          .catch((err) => {
+            this.logger.warn(
+              `Article scrape failed: ${(err as Error).message}.`,
+            );
+            return [] as { url: string; source: string }[];
+          });
+
+        let articleImageCursor = 0;
+        const nextArticleImage = (): string | null => {
+          if (articleImages.length === 0) return null;
+          const img = articleImages[articleImageCursor % articleImages.length];
+          articleImageCursor += 1;
+          return img.url;
+        };
+
+        const today = formatDate(new Date(), 'yyyy-MM-dd');
+
+        const clips: Array<{
+          videoUrl?: string;
+          imageUrl?: string;
+          durationSeconds: number;
+        }> = [];
+
         for (const plan of script.brollPlan) {
           const query = plan.keywordsEn.join(' ');
-          const videos = await this.pexels.searchPortrait(query);
-          const best = this.pexels.pickBest(videos, plan.durationSeconds);
-          const file = best ? this.pexels.pickVideoFile(best) : null;
-          if (!file) {
-            this.logger.warn(`No Pexels match for "${query}". Using placeholder.`);
-            continue;
+
+          // (a) Screenshot from Claude-suggested URL
+          if (plan.screenshotUrl) {
+            try {
+              const capture = await this.screenCapture.capture({
+                url: plan.screenshotUrl,
+                key: `${video.id}-${plan.sentenceIndex}`,
+              });
+              const s3Key = `screenshots/${today}/${video.id}_${plan.sentenceIndex}.png`;
+              const s3Uri = await this.s3.putFile({
+                key: s3Key,
+                filePath: capture.filePath,
+                contentType: 'image/png',
+              });
+              const httpsUrl = await this.safePresign(s3Uri);
+              clips.push({
+                imageUrl: httpsUrl,
+                durationSeconds: plan.durationSeconds,
+              });
+              this.logger.log(
+                `Screenshot captured for sentence ${plan.sentenceIndex}: ${plan.screenshotUrl}`,
+              );
+              continue;
+            } catch (err) {
+              this.logger.warn(
+                `Screenshot failed for ${plan.screenshotUrl}: ${(err as Error).message}. Falling back.`,
+              );
+            }
           }
-          clips.push({ videoUrl: file.link, durationSeconds: plan.durationSeconds });
+
+          // (b) Pexels stock video
+          try {
+            const videos = await this.pexels.searchPortrait(query);
+            const best = this.pexels.pickBest(videos, plan.durationSeconds);
+            const file = best ? this.pexels.pickVideoFile(best) : null;
+            if (file) {
+              clips.push({
+                videoUrl: file.link,
+                durationSeconds: plan.durationSeconds,
+              });
+              continue;
+            }
+          } catch (err) {
+            this.logger.warn(
+              `Pexels failed for "${query}": ${(err as Error).message}`,
+            );
+          }
+
+          // (c) Article image fallback
+          const fallback = nextArticleImage();
+          if (fallback) {
+            clips.push({
+              imageUrl: fallback,
+              durationSeconds: plan.durationSeconds,
+            });
+            this.logger.log(`Article image fallback for "${query}"`);
+          } else {
+            this.logger.warn(
+              `No B-roll for "${query}" (screenshot/Pexels/article all empty).`,
+            );
+          }
         }
         return clips;
       });
@@ -145,12 +221,11 @@ export class PipelineService {
       const tts = await this.step(run.id, 'TTS_GENERATE_KO', () =>
         this.tts.synthesizeScript({
           sentencesKo: script.sentencesKo,
-          sentencesEn: translation.sentencesEn,
         }),
       );
 
-      // 7. Subtitle segments + SRT (timing already resolved by sentence-split TTS)
-      const subtitle = await this.step(run.id, 'SUBTITLE_GENERATE_EN', () =>
+      // 7. Subtitle segments + Korean SRT (timing resolved by sentence-split TTS)
+      const subtitle = await this.step(run.id, 'SUBTITLE_GENERATE_KO', () =>
         Promise.resolve(this.subtitle.buildFromTtsSegments(tts.segments)),
       );
 
@@ -162,12 +237,15 @@ export class PipelineService {
         srt: subtitle.srt,
       });
 
-      // 8. Remotion render
+      // 8. Remotion render — Remotion's asset loader only accepts http(s)://
+      // URLs, so presign the s3:// audio URL before handing it off.
+      const audioUrlHttp = await this.safePresign(audioUrl);
       const renderedPath = await this.step(run.id, 'VIDEO_RENDER', () =>
         this.renderer.render({
           channel,
           videoId: video.id,
-          audioUrl,
+          format: curation.format,
+          audioUrl: audioUrlHttp,
           subtitleSegments: subtitle.segments,
           bRollClips,
         }),
@@ -182,21 +260,21 @@ export class PipelineService {
         contentType: 'video/mp4',
       });
 
-      // 9. Generate YouTube metadata (title/description/tags)
+      // 9. Generate Korean YouTube metadata (title/description/tags)
       const meta = await this.metadata.generate(channel, {
         titleKo: script.titleKo,
         scriptKo: script.scriptKo,
-        sentencesEn: translation.sentencesEn,
       });
 
       // Persist video with final metadata + assets + timing
       const scheduledAt = this.nextKstUploadDateUtc();
-      const updatedVideo = await this.prisma.video.update({
+      await this.prisma.video.update({
         where: { id: video.id },
         data: {
           status: 'READY',
-          titleEn: meta.titleEn,
-          descriptionEn: meta.descriptionEn,
+          // Overwrite titleKo with the YouTube-optimized version from metadata
+          titleKo: meta.title,
+          descriptionKo: meta.description,
           tags: meta.tags,
           videoUrl: videoS3,
           audioUrl,
@@ -216,11 +294,10 @@ export class PipelineService {
       const notionResult = await this.step(run.id, 'NOTION_CREATE', () =>
         this.notion.createApprovalCard({
           channel,
-          titleKo: script.titleKo,
+          format: curation.format,
+          titleKo: meta.title,
           scriptKo: script.scriptKo,
-          titleEn: meta.titleEn,
-          descriptionEn: meta.descriptionEn,
-          scriptEn: updatedVideo.scriptEn,
+          descriptionKo: meta.description,
           tags: meta.tags,
           videoPreviewUrl,
           audioPreviewUrl,
@@ -240,8 +317,7 @@ export class PipelineService {
       await this.step(run.id, 'SLACK_NOTIFY', () => {
         const message = this.slack.formatApprovalMessage({
           channel,
-          titleKo: script.titleKo,
-          titleEn: meta.titleEn,
+          titleKo: meta.title,
           ttsDurationSec: tts.totalDurationSec,
           ttsCredits: tts.totalCredits,
           creditBudgetPerMonth: CREDIT_BUDGET_PER_MONTH,

@@ -8,8 +8,11 @@ import {
   buildSkinCurationUserPrompt,
 } from './prompts/curation/skin.prompt';
 
+export type VideoFormat = 'A' | 'C';
+
 export interface CurationResult {
   selectedItem: FetchedNewsItem;
+  format: VideoFormat;
   reason: string;
   angle: string;
   brollKeywordsEn: string[];
@@ -17,6 +20,7 @@ export interface CurationResult {
 
 interface RawCurationResponse {
   selected_id: string;
+  format?: string;
   reason: string;
   angle: string;
   broll_keywords_en: string[];
@@ -62,8 +66,16 @@ export class CuratorService {
       throw new Error(`Curator returned invalid selected_id: ${result.selected_id}`);
     }
 
+    const format: VideoFormat = result.format === 'C' ? 'C' : 'A';
+    if (result.format !== 'A' && result.format !== 'C') {
+      this.logger.warn(
+        `Curator returned unknown format "${result.format}", defaulting to A`,
+      );
+    }
+
     return {
       selectedItem: items[selectedIdx],
+      format,
       reason: result.reason,
       angle: result.angle,
       brollKeywordsEn: result.broll_keywords_en,

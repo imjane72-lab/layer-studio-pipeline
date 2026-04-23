@@ -8,11 +8,18 @@ const WIDTH = 1080;
 const HEIGHT = 1920;
 const FALLBACK_DURATION_SECONDS = 60;
 
+// Supertone's x-audio-length reports speech-only duration; the generated MP3
+// usually has an extra ~0.5-1s of trailing silence per sentence. Pad generously
+// so narration never cuts off.
+const TAIL_PADDING_SECONDS = 3;
+
 const calculateDuration: CalculateMetadataFunction<
   LayerAIStudioProps | LayerSkinStudioProps
 > = ({ props }) => {
   const last = props.subtitleSegments[props.subtitleSegments.length - 1];
-  const seconds = last ? Math.ceil(last.end) + 1 : FALLBACK_DURATION_SECONDS;
+  const seconds = last
+    ? Math.ceil(last.end) + TAIL_PADDING_SECONDS
+    : FALLBACK_DURATION_SECONDS;
   return {
     durationInFrames: Math.max(FPS, FPS * seconds),
   };

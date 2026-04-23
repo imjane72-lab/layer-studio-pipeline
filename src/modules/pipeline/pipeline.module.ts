@@ -4,9 +4,12 @@ import { PipelineController } from './pipeline.controller';
 import { PipelineService } from './pipeline.service';
 import { PipelineSchedulerService } from './pipeline-scheduler.service';
 import { ApprovalOrchestratorService } from './approval-orchestrator.service';
+import { NotionApprovalPollerService } from './notion-approval-poller.service';
 import { NewsModule } from '../news/news.module';
 import { ClaudeModule } from '../claude/claude.module';
 import { PexelsModule } from '../pexels/pexels.module';
+import { ArticleScraperModule } from '../article-scraper/article-scraper.module';
+import { ScreenCaptureModule } from '../screen-capture/screen-capture.module';
 import { TtsModule } from '../tts/tts.module';
 import { SubtitleModule } from '../subtitle/subtitle.module';
 import { VideoRendererModule } from '../video-renderer/video-renderer.module';
@@ -21,6 +24,8 @@ import { S3Module } from '../s3/s3.module';
     NewsModule,
     ClaudeModule,
     PexelsModule,
+    ArticleScraperModule,
+    ScreenCaptureModule,
     TtsModule,
     SubtitleModule,
     VideoRendererModule,
@@ -30,7 +35,12 @@ import { S3Module } from '../s3/s3.module';
     S3Module,
   ],
   controllers: [PipelineController],
-  providers: [PipelineService, PipelineSchedulerService, ApprovalOrchestratorService],
+  providers: [
+    PipelineService,
+    PipelineSchedulerService,
+    ApprovalOrchestratorService,
+    NotionApprovalPollerService,
+  ],
   exports: [PipelineService, ApprovalOrchestratorService],
 })
 export class PipelineModule {}

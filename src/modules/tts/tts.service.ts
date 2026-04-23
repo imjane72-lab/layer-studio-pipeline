@@ -6,12 +6,10 @@ import { TTS_PROVIDER, TtsProvider } from './tts-provider.interface';
  * turns into an SRT file and Remotion reads for on-screen text.
  *
  * `start` / `end` are cumulative seconds from the beginning of the merged audio.
- * `textEn` is filled in by the caller (pipeline has the translation in hand).
  */
 export interface SentenceSegment {
   index: number;
   textKo: string;
-  textEn: string;
   start: number;
   end: number;
   audioBuffer: Buffer;
@@ -21,7 +19,6 @@ export interface SentenceSegment {
 
 export interface SynthesizeScriptOptions {
   sentencesKo: string[];
-  sentencesEn: string[]; // same length as sentencesKo (enforced by translator)
   style?: string;
 }
 
@@ -41,24 +38,14 @@ export class TtsService {
   /**
    * Synthesize a full Korean script sentence-by-sentence and return per-sentence
    * segments with cumulative timestamps.
-   *
-   * The returned audio buffers are NOT merged — callers pass them to FFmpeg
-   * (video-renderer) or concatenate as needed.
    */
   async synthesizeScript(options: SynthesizeScriptOptions): Promise<SynthesizeScriptResult> {
-    const { sentencesKo, sentencesEn, style } = options;
-
-    if (sentencesKo.length !== sentencesEn.length) {
-      throw new Error(
-        `Sentence count mismatch: ko=${sentencesKo.length} en=${sentencesEn.length}`,
-      );
-    }
+    const { sentencesKo, style } = options;
 
     this.logger.log(
       `Synthesizing ${sentencesKo.length} sentences via ${this.provider.name}`,
     );
 
-    // Parallelize — provider's internal rate limiter serializes under the hood
     const results = await Promise.all(
       sentencesKo.map((text) => this.provider.synthesize({ text, style })),
     );
@@ -73,7 +60,6 @@ export class TtsService {
       segments.push({
         index,
         textKo: sentencesKo[index],
-        textEn: sentencesEn[index],
         start,
         end,
         audioBuffer: result.audioBuffer,

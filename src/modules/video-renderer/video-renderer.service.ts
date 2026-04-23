@@ -9,19 +9,21 @@ import { Channel } from '../../common/enums/channel.enum';
 export interface RenderSubtitleSegment {
   index: number;
   textKo: string;
-  textEn: string;
   start: number;
   end: number;
 }
 
 export interface RenderBRollClip {
-  videoUrl: string;
+  /** One of videoUrl or imageUrl must be set. */
+  videoUrl?: string;
+  imageUrl?: string;
   durationSeconds: number;
 }
 
 export interface RenderInput {
   channel: Channel;
   videoId: string;
+  format: 'A' | 'C';
   audioUrl: string;
   subtitleSegments: RenderSubtitleSegment[];
   bRollClips: RenderBRollClip[];
@@ -52,6 +54,7 @@ export class VideoRendererService {
       audioUrl: input.audioUrl,
       subtitleSegments: input.subtitleSegments,
       bRollClips: input.bRollClips,
+      format: input.format,
     };
 
     const composition = await selectComposition({

@@ -13,19 +13,26 @@
  
 ## 🌏 핵심 콘텐츠 전략 (필수 숙지)
  
-### "한국인 오리지널 + 영어 자막"
+### "한국인 오리지널 + 한국어 박힌 자막 + 영어 CC"
  
 **모든 코드와 프롬프트는 이 전략을 따라야 합니다:**
  
 1. **모든 스크립트는 한국어로 먼저 작성**
-2. **영어 자막은 한국어 원본의 자연스러운 번역**
-3. **Supertone Play 음성 복제는 한국어 모델 사용**
-4. **자막 타이밍은 한국어 음성 기준**
+2. **화면에 박힌 자막(burned-in)은 한국어** — Remotion이 픽셀에 그림
+3. **영어 자막은 YouTube 캡션 트랙(CC)으로 별도 업로드** — 한국어 원본의 자연스러운 번역
+4. **Supertone Play 음성 복제는 한국어 모델 사용**
+5. **자막 타이밍은 한국어 음성 기준**
 ### 이유
-- 나는 한국인 개발자이자 K-Beauty 내부자
-- K-컬처 글로벌 열풍 활용
+- Shorts 알고리즘은 업로더 지역(한국) 초기 시청 engagement → 글로벌 확산 순서
+  → **한국인 시청 유지가 전제**, 박힌 자막은 한국어여야 초기 이탈 방지
+- 영어 CC는 해외 시청자가 선택적으로 켤 수 있고 YouTube 자동번역(스·일 등) 베이스로도 사용
+- 한국인 개발자이자 K-Beauty 내부자 — "진정성"이 차별점
 - YouTube AI 탐지 정책에 안전
-- "진정성"이 차별점
+
+### 포맷 템플릿 레이어
+전달 방식은 [`docs/FORMATS.md`](./docs/FORMATS.md)에서 정의한 **포맷 A (정보전달)** /
+**포맷 C (하우투)** 중 큐레이터가 주제에 따라 자동 선택합니다.
+채널(AI / Skin)과 포맷(A / C)은 독립 차원입니다.
 ---
  
 ## 🏗️ 핵심 아키텍처 원칙
@@ -397,9 +404,10 @@ docs: update CONTENT.md with new subtitle guidelines
  
 - [docs/SPEC.md](./docs/SPEC.md) — 상세 기술 스펙
 - [docs/WORKFLOW.md](./docs/WORKFLOW.md) — 파이프라인 흐름
-- [docs/CONTENT.md](./docs/CONTENT.md) — 콘텐츠 규칙 (중요!)
+- [docs/CONTENT.md](./docs/CONTENT.md) — 채널·톤·번역 원칙
+- [docs/FORMATS.md](./docs/FORMATS.md) — 포맷 A / C 템플릿 (중요!)
 - [docs/SETUP.md](./docs/SETUP.md) — 환경 설정
 ---
  
-_Last updated: 2026-04-22_
+_Last updated: 2026-04-23_
  

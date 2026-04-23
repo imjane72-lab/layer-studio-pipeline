@@ -6,8 +6,8 @@ import { YouTubeOAuthService } from './oauth.service';
 
 export interface UploadInput {
   channel: Channel;
-  titleEn: string;
-  descriptionEn: string;
+  title: string;
+  description: string;
   tags: string[];
   videoPath: string;
   scheduledAt?: Date;
@@ -27,7 +27,7 @@ export class YouTubeService {
     const auth = this.oauth.getAuthClient(input.channel);
     const youtube = google.youtube({ version: 'v3', auth });
 
-    this.logger.log(`YouTube upload: ${input.titleEn} (${input.channel})`);
+    this.logger.log(`YouTube upload: ${input.title} (${input.channel})`);
 
     const scheduled = input.scheduledAt !== undefined;
     const response = await youtube.videos.insert({
@@ -35,11 +35,11 @@ export class YouTubeService {
       notifySubscribers: true,
       requestBody: {
         snippet: {
-          title: input.titleEn,
-          description: input.descriptionEn,
+          title: input.title,
+          description: input.description,
           tags: input.tags,
           categoryId: input.categoryId ?? '28',
-          defaultLanguage: input.defaultLanguage ?? 'en',
+          defaultLanguage: input.defaultLanguage ?? 'ko',
           defaultAudioLanguage: input.defaultAudioLanguage ?? 'ko',
         },
         status: {
