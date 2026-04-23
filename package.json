@@ -28,6 +28,7 @@
     "test:supertone": "ts-node scripts/test-supertone.ts",
     "test:s3": "ts-node --transpile-only scripts/test-s3.ts",
     "test:notion": "ts-node --transpile-only scripts/test-notion.ts",
+    "test:youtube": "ts-node --transpile-only scripts/test-youtube.ts",
     "youtube:token": "ts-node --transpile-only scripts/get-youtube-token.ts"
   },
   "dependencies": {
