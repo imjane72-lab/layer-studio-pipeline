@@ -1,0 +1,67 @@
+# Manual pipeline trigger (GitHub Actions UI -> Run workflow button).
+#
+# Daily automatic runs are handled by the app's internal @Cron
+# (PipelineSchedulerService), gated by PIPELINE_CRON_ENABLED=true. This
+# workflow exists for on-demand runs: testing, debugging, emergency reruns.
+#
+# Secrets required (Settings -> Secrets and variables -> Actions):
+#   PIPELINE_TRIGGER_URL   Base URL of deployed app, e.g. https://layer.up.railway.app
+#   PIPELINE_TRIGGER_TOKEN (optional) Bearer token if /pipeline/run is protected.
+
+name: pipeline-manual-run
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Channel to run (AI, SKIN, or BOTH)
+        required: true
+        default: BOTH
+        type: choice
+        options:
+          - AI
+          - SKIN
+          - BOTH
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify trigger URL is configured
+        env:
+          PIPELINE_TRIGGER_URL: ${{ secrets.PIPELINE_TRIGGER_URL }}
+        run: |
+          if [ -z "$PIPELINE_TRIGGER_URL" ]; then
+            echo "::error::PIPELINE_TRIGGER_URL secret is not set. Add it in repo Settings -> Secrets."
+            exit 1
+          fi
+
+      - name: Trigger pipeline
+        env:
+          PIPELINE_TRIGGER_URL: ${{ secrets.PIPELINE_TRIGGER_URL }}
+          PIPELINE_TRIGGER_TOKEN: ${{ secrets.PIPELINE_TRIGGER_TOKEN }}
+          CHANNEL_INPUT: ${{ github.event.inputs.channel || 'BOTH' }}
+        run: |
+          set -euo pipefail
+
+          AUTH_HEADER=()
+          if [ -n "${PIPELINE_TRIGGER_TOKEN:-}" ]; then
+            AUTH_HEADER=(-H "Authorization: Bearer ${PIPELINE_TRIGGER_TOKEN}")
+          fi
+
+          run_channel() {
+            local ch="$1"
+            echo "→ Triggering pipeline for channel=$ch"
+            curl -sS -f -X POST "${PIPELINE_TRIGGER_URL%/}/pipeline/run" \
+              -H "Content-Type: application/json" \
+              "${AUTH_HEADER[@]}" \
+              -d "{\"channel\":\"$ch\"}"
+            echo
+          }
+
+          case "$CHANNEL_INPUT" in
+            AI)   run_channel AI ;;
+            SKIN) run_channel SKIN ;;
+            BOTH) run_channel AI; run_channel SKIN ;;
+            *)    echo "::error::Unknown channel: $CHANNEL_INPUT"; exit 1 ;;
+          esac
