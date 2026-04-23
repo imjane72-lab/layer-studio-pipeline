@@ -25,8 +25,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node scripts/seed-db.ts",
-    "test:supertone": "ts-node scripts/test-supertone.ts"
+    "test:supertone": "ts-node scripts/test-supertone.ts",
+    "test:s3": "ts-node --transpile-only scripts/test-s3.ts",
+    "test:notion": "ts-node --transpile-only scripts/test-notion.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
