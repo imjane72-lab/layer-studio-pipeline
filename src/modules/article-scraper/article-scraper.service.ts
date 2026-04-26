@@ -8,8 +8,7 @@ export interface ScrapedImage {
   source: 'og' | 'twitter' | 'body';
 }
 
-const USER_AGENT =
-  'Mozilla/5.0 (compatible; LayerStudio/1.0; +https://layer-studio.local/bot)';
+const USER_AGENT = 'Mozilla/5.0 (compatible; LayerStudio/1.0; +https://layer-studio.local/bot)';
 const TIMEOUT_MS = 10_000;
 const MAX_IMAGES = 8;
 const MIN_IMAGE_SIDE = 400; // reject tiny icons / sprites
@@ -38,9 +37,7 @@ export class ArticleScraperService {
       });
       html = typeof data === 'string' ? data : String(data ?? '');
     } catch (err) {
-      this.logger.warn(
-        `Failed to fetch ${articleUrl}: ${(err as Error).message}. 0 images.`,
-      );
+      this.logger.warn(`Failed to fetch ${articleUrl}: ${(err as Error).message}. 0 images.`);
       return [];
     }
 
@@ -66,22 +63,18 @@ export class ArticleScraperService {
     $('meta[property="og:image"], meta[name="og:image"]').each((_, el) => {
       push($(el).attr('content'), 'og');
     });
-    $('meta[name="twitter:image"], meta[property="twitter:image"]').each(
-      (_, el) => {
-        push($(el).attr('content'), 'twitter');
-      },
-    );
+    $('meta[name="twitter:image"], meta[property="twitter:image"]').each((_, el) => {
+      push($(el).attr('content'), 'twitter');
+    });
 
     // Body images — crude but effective
-    $('article img, main img, .article-body img, .content img, img').each(
-      (_, el) => {
-        if (images.length >= MAX_IMAGES) return;
-        const src = $(el).attr('src') ?? $(el).attr('data-src');
-        const width = Number($(el).attr('width')) || undefined;
-        if (width && width < MIN_IMAGE_SIDE) return;
-        push(src, 'body');
-      },
-    );
+    $('article img, main img, .article-body img, .content img, img').each((_, el) => {
+      if (images.length >= MAX_IMAGES) return;
+      const src = $(el).attr('src') ?? $(el).attr('data-src');
+      const width = Number($(el).attr('width')) || undefined;
+      if (width && width < MIN_IMAGE_SIDE) return;
+      push(src, 'body');
+    });
 
     this.logger.log(
       `${articleUrl}: ${images.length} images (og=${images.filter((i) => i.source === 'og').length}, body=${images.filter((i) => i.source === 'body').length})`,

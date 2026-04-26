@@ -145,9 +145,7 @@ describe('ApprovalOrchestratorService', () => {
         'youtube boom',
       );
 
-      const failureCall = prisma.video.update.mock.calls.find(
-        (c) => c[0].data.status === 'FAILED',
-      );
+      const failureCall = prisma.video.update.mock.calls.find((c) => c[0].data.status === 'FAILED');
       expect(failureCall).toBeDefined();
       expect(failureCall[0].data.retryCount).toEqual({ increment: 1 });
     });
@@ -191,9 +189,9 @@ describe('ApprovalOrchestratorService', () => {
         baseVideo({ status: 'SCHEDULED', youtubeVideoId: 'yt_x' }),
       );
 
-      await expect(
-        service.rejectByNotionPageId('notion_page_abc'),
-      ).rejects.toThrow(/already SCHEDULED on YouTube/);
+      await expect(service.rejectByNotionPageId('notion_page_abc')).rejects.toThrow(
+        /already SCHEDULED on YouTube/,
+      );
       expect(prisma.video.update).not.toHaveBeenCalled();
     });
   });

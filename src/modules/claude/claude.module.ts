@@ -7,17 +7,7 @@ import { ScriptwriterKoService } from './scriptwriter-ko.service';
 
 @Module({
   imports: [PrismaModule],
-  providers: [
-    ClaudeService,
-    CuratorService,
-    ScriptwriterKoService,
-    MetadataService,
-  ],
-  exports: [
-    ClaudeService,
-    CuratorService,
-    ScriptwriterKoService,
-    MetadataService,
-  ],
+  providers: [ClaudeService, CuratorService, ScriptwriterKoService, MetadataService],
+  exports: [ClaudeService, CuratorService, ScriptwriterKoService, MetadataService],
 })
 export class ClaudeModule {}

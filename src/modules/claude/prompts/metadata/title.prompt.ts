@@ -28,8 +28,4 @@ export const buildTitleMetadataUserPrompt = ({
   titleKo,
   scriptKo,
 }: TitleMetadataUserInput): string =>
-  [
-    `채널: ${channel}`,
-    `스크립트 원본 제목: ${titleKo}`,
-    `스크립트 본문:\n${scriptKo}`,
-  ].join('\n');
+  [`채널: ${channel}`, `스크립트 원본 제목: ${titleKo}`, `스크립트 본문:\n${scriptKo}`].join('\n');

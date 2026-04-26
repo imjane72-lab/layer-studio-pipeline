@@ -1,10 +1,5 @@
 import { Client } from '@notionhq/client';
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Channel } from '../../common/enums/channel.enum';
 
@@ -132,9 +127,7 @@ export class NotionService implements OnModuleInit {
     }
     const dbId = channel === Channel.AI ? this.dbAi : this.dbSkin;
     if (!dbId) {
-      throw new ServiceUnavailableException(
-        `NOTION_DATABASE_ID_${channel} is not configured.`,
-      );
+      throw new ServiceUnavailableException(`NOTION_DATABASE_ID_${channel} is not configured.`);
     }
   }
 }

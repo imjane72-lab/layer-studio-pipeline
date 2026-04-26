@@ -75,9 +75,7 @@ export class PipelineService {
 
     try {
       // 1. News fetch
-      const items = await this.step(run.id, 'NEWS_FETCH', () =>
-        this.news.fetchForChannel(channel),
-      );
+      const items = await this.step(run.id, 'NEWS_FETCH', () => this.news.fetchForChannel(channel));
       if (items.length === 0) {
         this.logger.warn(`No fresh news for ${channel}. Ending pipeline.`);
         await this.finishRun(run.id, 'NO_NEWS');
@@ -125,14 +123,10 @@ export class PipelineService {
       // Screenshots and article images are uploaded to S3 so Remotion can fetch
       // via http(s)://.
       const bRollClips = await this.step(run.id, 'BROLL_FETCH', async () => {
-        const articleImages = await this.scraper
-          .scrape(curation.selectedItem.url)
-          .catch((err) => {
-            this.logger.warn(
-              `Article scrape failed: ${(err as Error).message}.`,
-            );
-            return [] as { url: string; source: string }[];
-          });
+        const articleImages = await this.scraper.scrape(curation.selectedItem.url).catch((err) => {
+          this.logger.warn(`Article scrape failed: ${(err as Error).message}.`);
+          return [] as { url: string; source: string }[];
+        });
 
         let articleImageCursor = 0;
         const nextArticleImage = (): string | null => {
@@ -195,9 +189,7 @@ export class PipelineService {
               continue;
             }
           } catch (err) {
-            this.logger.warn(
-              `Pexels failed for "${query}": ${(err as Error).message}`,
-            );
+            this.logger.warn(`Pexels failed for "${query}": ${(err as Error).message}`);
           }
 
           // (c) Article image fallback
@@ -209,9 +201,7 @@ export class PipelineService {
             });
             this.logger.log(`Article image fallback for "${query}"`);
           } else {
-            this.logger.warn(
-              `No B-roll for "${query}" (screenshot/Pexels/article all empty).`,
-            );
+            this.logger.warn(`No B-roll for "${query}" (screenshot/Pexels/article all empty).`);
           }
         }
         return clips;
@@ -339,11 +329,7 @@ export class PipelineService {
    * Run a step, logging STARTED / SUCCESS / FAILED transitions to PipelineLog.
    * Re-throws on failure so `run()` can short-circuit cleanly.
    */
-  private async step<T>(
-    runId: string,
-    step: PipelineStep,
-    fn: () => Promise<T>,
-  ): Promise<T> {
+  private async step<T>(runId: string, step: PipelineStep, fn: () => Promise<T>): Promise<T> {
     const started = Date.now();
     await this.prisma.pipelineLog.create({
       data: { runId, step, status: 'STARTED' },

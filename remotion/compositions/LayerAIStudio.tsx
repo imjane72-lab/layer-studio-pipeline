@@ -3,11 +3,7 @@ import { AbsoluteFill } from 'remotion';
 import { aiTheme } from '../themes/ai.theme';
 import { BrandOverlay } from '../components/BrandOverlay';
 import { BRollScene, BRollClip } from '../components/BRollScene';
-import {
-  KoreanSubtitle,
-  SubtitleSegment,
-  FormatLayout,
-} from '../components/KoreanSubtitle';
+import { KoreanSubtitle, SubtitleSegment, FormatLayout } from '../components/KoreanSubtitle';
 import { KoreanAudio } from '../components/KoreanAudio';
 
 export interface LayerAIStudioProps {
@@ -27,11 +23,7 @@ export const LayerAIStudio: React.FC<LayerAIStudioProps> = ({
     <AbsoluteFill style={{ background: aiTheme.background, fontFamily: aiTheme.fontFamily }}>
       <BRollScene clips={bRollClips} />
       <BrandOverlay channelName={aiTheme.channelName} accent={aiTheme.accent} />
-      <KoreanSubtitle
-        segments={subtitleSegments}
-        format={format}
-        color={aiTheme.foreground}
-      />
+      <KoreanSubtitle segments={subtitleSegments} format={format} color={aiTheme.foreground} />
       <KoreanAudio audioUrl={audioUrl} />
     </AbsoluteFill>
   );

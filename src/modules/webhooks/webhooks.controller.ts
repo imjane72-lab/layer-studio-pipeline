@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Logger,
-  Post,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Logger, Post } from '@nestjs/common';
 import { ApprovalOrchestratorService } from '../pipeline/approval-orchestrator.service';
 
 /**
@@ -37,8 +31,7 @@ export class WebhooksController {
   async notionApproval(
     @Body() payload: NotionWebhookPayload,
   ): Promise<{ ok: true; youtubeVideoId: string }> {
-    const pageId =
-      payload?.page?.id ?? payload?.page_id ?? payload?.data?.page?.id;
+    const pageId = payload?.page?.id ?? payload?.page_id ?? payload?.data?.page?.id;
 
     if (!pageId) {
       this.logger.warn('Notion approval webhook missing page id');
@@ -54,8 +47,7 @@ export class WebhooksController {
   async notionReject(
     @Body() payload: NotionWebhookPayload,
   ): Promise<{ ok: true; videoId: string }> {
-    const pageId =
-      payload?.page?.id ?? payload?.page_id ?? payload?.data?.page?.id;
+    const pageId = payload?.page?.id ?? payload?.page_id ?? payload?.data?.page?.id;
 
     if (!pageId) {
       this.logger.warn('Notion reject webhook missing page id');

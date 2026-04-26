@@ -78,11 +78,9 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
 
     return this.limiter.schedule(async () => {
       try {
-        const response = await this.http.post(
-          `/v1/text-to-speech/${this.voiceIdKo}`,
-          payload,
-          { responseType: 'arraybuffer' },
-        );
+        const response = await this.http.post(`/v1/text-to-speech/${this.voiceIdKo}`, payload, {
+          responseType: 'arraybuffer',
+        });
 
         // Supertone returns duration in x-audio-length header (seconds, float).
         // Credits are NOT in response headers — we estimate from duration.
@@ -115,7 +113,7 @@ export class SupertoneProvider implements TtsProvider, OnModuleInit {
     const speed = options.speed ?? this.defaultSpeed;
     const charCount = options.text.length;
     // Rough Korean heuristic: ~10 chars/sec at speed=1.0
-    const durationSeconds = (charCount / 10) / speed;
+    const durationSeconds = charCount / 10 / speed;
     return {
       durationSeconds,
       estimatedCredits: Math.ceil(durationSeconds * CREDITS_PER_SECOND_ESTIMATE),

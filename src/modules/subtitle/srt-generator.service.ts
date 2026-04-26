@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 export interface SrtSegmentInput {
   start: number; // seconds
-  end: number;   // seconds
+  end: number; // seconds
   text: string;
 }
 
@@ -34,11 +34,10 @@ export class SrtGeneratorService {
     const seconds = Math.floor(safe % 60);
     const milliseconds = Math.round((safe - Math.floor(safe)) * 1000);
 
-    return [
-      this.pad(hours, 2),
-      this.pad(minutes, 2),
-      this.pad(seconds, 2),
-    ].join(':') + `,${this.pad(milliseconds, 3)}`;
+    return (
+      [this.pad(hours, 2), this.pad(minutes, 2), this.pad(seconds, 2)].join(':') +
+      `,${this.pad(milliseconds, 3)}`
+    );
   }
 
   private pad(n: number, width: number): string {

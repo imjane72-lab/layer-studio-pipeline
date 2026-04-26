@@ -42,9 +42,7 @@ export class TtsService {
   async synthesizeScript(options: SynthesizeScriptOptions): Promise<SynthesizeScriptResult> {
     const { sentencesKo, style } = options;
 
-    this.logger.log(
-      `Synthesizing ${sentencesKo.length} sentences via ${this.provider.name}`,
-    );
+    this.logger.log(`Synthesizing ${sentencesKo.length} sentences via ${this.provider.name}`);
 
     const results = await Promise.all(
       sentencesKo.map((text) => this.provider.synthesize({ text, style })),

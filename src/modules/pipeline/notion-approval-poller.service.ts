@@ -29,8 +29,7 @@ export class NotionApprovalPollerService {
 
   @Interval('notion-approval-poll', POLL_INTERVAL_MS)
   async poll(): Promise<void> {
-    const enabled =
-      this.config.get<string>('NOTION_APPROVAL_POLLING_ENABLED', 'true') === 'true';
+    const enabled = this.config.get<string>('NOTION_APPROVAL_POLLING_ENABLED', 'true') === 'true';
     if (!enabled) return;
 
     if (this.running) {
@@ -51,9 +50,7 @@ export class NotionApprovalPollerService {
     try {
       pageIds = await this.notion.findApprovedPendingPages(channel);
     } catch (err) {
-      this.logger.warn(
-        `Notion query failed for ${channel}: ${(err as Error).message}`,
-      );
+      this.logger.warn(`Notion query failed for ${channel}: ${(err as Error).message}`);
       return;
     }
 
@@ -65,9 +62,7 @@ export class NotionApprovalPollerService {
       try {
         const { youtubeVideoId } = await this.approval.publishByNotionPageId(pageId);
         await this.notion.updatePageStatus(pageId, 'Published');
-        this.logger.log(
-          `[${channel}] Notion ${pageId} -> YouTube ${youtubeVideoId}`,
-        );
+        this.logger.log(`[${channel}] Notion ${pageId} -> YouTube ${youtubeVideoId}`);
       } catch (err) {
         this.logger.error(
           `[${channel}] Publish failed for Notion ${pageId}: ${(err as Error).message}`,

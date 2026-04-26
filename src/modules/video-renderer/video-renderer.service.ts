@@ -47,8 +47,7 @@ export class VideoRendererService {
 
     const serveUrl = await this.getBundleUrl();
 
-    const compositionId =
-      input.channel === Channel.AI ? 'LayerAIStudio' : 'LayerSkinStudio';
+    const compositionId = input.channel === Channel.AI ? 'LayerAIStudio' : 'LayerSkinStudio';
 
     const inputProps = {
       audioUrl: input.audioUrl,

@@ -42,10 +42,7 @@ export class ApprovalOrchestratorService {
    * cleanup — assets stay in S3 for audit until a TTL policy kicks in.
    * Idempotent: already-REJECTED returns success without re-updating.
    */
-  async rejectByNotionPageId(
-    notionPageId: string,
-    reason?: string,
-  ): Promise<{ videoId: string }> {
+  async rejectByNotionPageId(notionPageId: string, reason?: string): Promise<{ videoId: string }> {
     const video = await this.prisma.video.findFirst({ where: { notionPageId } });
     if (!video) {
       throw new NotFoundException(`No video found for Notion page ${notionPageId}`);
@@ -157,11 +154,7 @@ export class ApprovalOrchestratorService {
     }
   }
 
-  private async downloadS3Asset(
-    s3Uri: string,
-    workDir: string,
-    filename: string,
-  ): Promise<string> {
+  private async downloadS3Asset(s3Uri: string, workDir: string, filename: string): Promise<string> {
     const parsed = this.s3.parseUri(s3Uri);
     if (!parsed) {
       throw new Error(

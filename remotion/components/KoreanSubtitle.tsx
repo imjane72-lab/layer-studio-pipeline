@@ -5,7 +5,7 @@ export interface SubtitleSegment {
   index: number;
   textKo: string;
   start: number; // seconds
-  end: number;   // seconds
+  end: number; // seconds
 }
 
 export type FormatLayout = 'A' | 'C';

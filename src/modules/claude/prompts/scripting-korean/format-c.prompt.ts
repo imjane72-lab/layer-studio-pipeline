@@ -103,8 +103,5 @@ export interface FormatCUserInput {
   newsContent: string;
 }
 
-export const buildFormatCUserPrompt = ({
-  channel,
-  newsContent,
-}: FormatCUserInput): string =>
+export const buildFormatCUserPrompt = ({ channel, newsContent }: FormatCUserInput): string =>
   `채널: ${CHANNEL_CONTEXT[channel]}\n\n주제 소스:\n${newsContent}`;

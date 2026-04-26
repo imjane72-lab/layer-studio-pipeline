@@ -112,8 +112,5 @@ export interface FormatAUserInput {
   newsContent: string;
 }
 
-export const buildFormatAUserPrompt = ({
-  channel,
-  newsContent,
-}: FormatAUserInput): string =>
+export const buildFormatAUserPrompt = ({ channel, newsContent }: FormatAUserInput): string =>
   `채널: ${CHANNEL_CONTEXT[channel]}\n\n뉴스:\n${newsContent}`;

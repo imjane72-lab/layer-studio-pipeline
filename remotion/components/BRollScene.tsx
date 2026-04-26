@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  AbsoluteFill,
-  Img,
-  OffthreadVideo,
-  Sequence,
-  useVideoConfig,
-} from 'remotion';
+import { AbsoluteFill, Img, OffthreadVideo, Sequence, useVideoConfig } from 'remotion';
 
 export interface BRollClip {
   /** One of videoUrl or imageUrl must be set. */

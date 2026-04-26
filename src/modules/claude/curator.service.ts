@@ -3,10 +3,7 @@ import { Channel } from '../../common/enums/channel.enum';
 import { FetchedNewsItem } from '../news/news.service';
 import { ClaudeService } from './claude.service';
 import { AI_CURATION_SYSTEM, buildAiCurationUserPrompt } from './prompts/curation/ai.prompt';
-import {
-  SKIN_CURATION_SYSTEM,
-  buildSkinCurationUserPrompt,
-} from './prompts/curation/skin.prompt';
+import { SKIN_CURATION_SYSTEM, buildSkinCurationUserPrompt } from './prompts/curation/skin.prompt';
 
 export type VideoFormat = 'A' | 'C';
 
@@ -68,9 +65,7 @@ export class CuratorService {
 
     const format: VideoFormat = result.format === 'C' ? 'C' : 'A';
     if (result.format !== 'A' && result.format !== 'C') {
-      this.logger.warn(
-        `Curator returned unknown format "${result.format}", defaulting to A`,
-      );
+      this.logger.warn(`Curator returned unknown format "${result.format}", defaulting to A`);
     }
 
     return {

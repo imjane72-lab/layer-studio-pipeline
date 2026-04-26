@@ -51,14 +51,8 @@ export class ScriptwriterKoService {
 
   constructor(private readonly claude: ClaudeService) {}
 
-  async write(
-    channel: Channel,
-    format: VideoFormat,
-    news: FetchedNewsItem,
-  ): Promise<KoreanScript> {
-    this.logger.log(
-      `Writing Korean script (format=${format}) for ${channel}: ${news.title}`,
-    );
+  async write(channel: Channel, format: VideoFormat, news: FetchedNewsItem): Promise<KoreanScript> {
+    this.logger.log(`Writing Korean script (format=${format}) for ${channel}: ${news.title}`);
 
     const newsContent = `${news.title}\n\n${news.description ?? ''}\n\n${news.url}`;
 
